@@ -1,0 +1,6 @@
+# UUID                 	Group Name
+#
+global:Anonymous-Users 	Anonymous Users
+global:Project-Owners  	Project Owners
+global:Registered-Users	Registered Users
+mdb:gas                	mdb/gas
