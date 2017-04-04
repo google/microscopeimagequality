@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+    http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.scijava</groupId>
+    <artifactId>pom-scijava</artifactId>
+    <version>14.0.0</version>
+    <relativePath />
+  </parent>
+
+  <!-- TODO(ashankar,samuely): Perhaps some other maven coordinates? -->
+  <groupId>com.google.research.biology.microscopy</groupId>
+  <artifactId>quality</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <!-- TODO(ashankar,samuely): Update these with pointers to the paper and other good stuff. -->
+  <name>Microscopy Image Focus Quality Classifier Plugin for ImageJ.</name>
+  <description>ImageJ plugin to get a microsope image annotated with focus quality.</description>
+  <url>https://microscopeimagequality.googlesource.com/All-Projects/+/main</url>
+  <inceptionYear>2017</inceptionYear>
+
+  <repositories>
+    <repository>
+      <id>imagej.public</id>
+      <url>http://maven.imagej.net/content/groups/public</url>
+    </repository>
+  </repositories>
+
+  <properties>
+    <!-- This repository only contains samples. To keep the pom.xml
+         more focused, I've removed requirements (such as contributor,
+         developer, source code management) enforced by the maven-enforcer-plugin
+         for publishable plugins. -->
+    <enforcer.skip>true</enforcer.skip>
+    <exec.mainClass>MicroscopeImageFocusQualityClassifier</exec.mainClass>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>net.imagej</groupId>
+      <artifactId>imagej</artifactId>
+    </dependency>
+    <!-- Dependency on the TensorFlow Java API. -->
+    <dependency>
+      <groupId>org.tensorflow</groupId>
+      <artifactId>tensorflow</artifactId>
+      <version>1.1.0-rc0-windows-fix</version>
+    </dependency>
+  </dependencies>
+  <!-- Could use the download-maven-plugin to package the model. -->
+  <!-- See https://github.com/asimshankar/imagej-tensorflow/tree/master/pom.xml for an example. -->
+</project>
