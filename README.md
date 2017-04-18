@@ -51,3 +51,8 @@ images, `.png` of `.tif` format, all with the same width and height.
 1. Launch `miq_eval.py` with a held-out test dataset.
 1. Use TensorBoard to view training and eval progress.
 1. When satisfied with model accuracy, save the `model.ckpt` files for later use.
+
+## Running tests
+
+1. Add path to `quality` directory to PYTHONPATH.
+1. Then run each test. For example,  `python quality/miq_test.py`.
