@@ -16,6 +16,9 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Tensor;
+import org.tensorflow.framework.MetaGraphDef;
+import org.tensorflow.framework.SignatureDef;
+import org.tensorflow.framework.TensorInfo;
 
 /**
  * Command to apply the Microscopy image focus quality classifier model on an input (16-bit,
@@ -53,15 +56,11 @@ public class MicroscopeImageFocusQualityClassifier implements Command {
   @Parameter(type = ItemIO.OUTPUT)
   private Dataset annotatedImage;
 
+  // Same as the tag used in export_saved_model in the Python code.
   private static final String MODEL_TAG = "inference";
-  // These constants could be extracted from the signature of the MetaGraphDef protocol buffer
-  // obtained from the call to SavedModelBundle.load(). However, Java-generated code for
-  // TensorFlow protocol buffers aren't nicely packaged yet, so we use these fixed names
-  // (tied to the specific model being used) for now. Revisit if and when that packaging
-  // changes.
-  private static final String INPUT_NODE_NAME = "Placeholder";
-  private static final String OUTPUT_PROBABILITIES_NAME = "Softmax";
-  private static final String OUTPUT_PATCHES_NAME = "Reshape";
+  // Same as tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
+  // in Python. Perhaps this should be an exported constant in TensorFlow's Java API.
+  private static final String DEFAULT_SERVING_SIGNATURE_DEF_KEY = "serving_default";
 
   /*
    * The run() method is where we do the actual 'work' of the command.
@@ -81,6 +80,12 @@ public class MicroscopeImageFocusQualityClassifier implements Command {
               "Loaded microscope focus image quality model in %dms",
               (loadModelEnd - loadModelStart) / 1000000));
 
+      // Extract names from the model signature.
+      // The strings "input", "probabilities" and "patches" are meant to be in sync with
+      // the model exporter (export_saved_model()) in Python.
+      final SignatureDef sig =
+          MetaGraphDef.parseFrom(model.metaGraphDef())
+              .getSignatureDefOrThrow(DEFAULT_SERVING_SIGNATURE_DEF_KEY);
       originalImage =
           new ImgOpener()
               .openImg(
@@ -94,9 +99,9 @@ public class MicroscopeImageFocusQualityClassifier implements Command {
             model
                 .session()
                 .runner()
-                .feed(INPUT_NODE_NAME, inputTensor)
-                .fetch(OUTPUT_PROBABILITIES_NAME)
-                .fetch(OUTPUT_PATCHES_NAME)
+                .feed(opName(sig.getInputsOrThrow("input")), inputTensor)
+                .fetch(opName(sig.getOutputsOrThrow("probabilities")))
+                .fetch(opName(sig.getOutputsOrThrow("patches")))
                 .run();
         final long runModelEnd = System.nanoTime();
         try (Tensor probabilities = fetches.get(0);
@@ -178,6 +183,17 @@ public class MicroscopeImageFocusQualityClassifier implements Command {
     logService.info(
         String.format("Created Tensor from %dx%d image in %dns", height, width, (end - start)));
     return t;
+  }
+
+  // The SignatureDef inputs and outputs contain names of the form <operation_name>:<output_index>,
+  // where for this model, <output_index> is always 0. This function trims the ":0" suffix to
+  // get the operation name.
+  private static String opName(TensorInfo t) {
+    final String n = t.getName();
+    if (n.endsWith(":0")) {
+      return n.substring(0, n.lastIndexOf(":0"));
+    }
+    return n;
   }
 
   public static void main(String[] args) {
