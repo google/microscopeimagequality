@@ -123,7 +123,7 @@ def _make_scatter_subplot(num_classes, predictions, certainties1, certainties2,
 
 def plot_scatter(x, y, xlabel, ylabel, color, alpha):
   """Plot scatter plot."""
-  plt.scatter(x, y, alpha=alpha, s=0.6, c=color, linewidths=0)
+  plt.scatter(x, y, alpha=alpha, s=2.5, c=color, linewidths=0)
 
   plt.grid('off')
   plt.tick_params(
@@ -183,7 +183,7 @@ def plot_certainties(certainties, predictions, num_classes, save_path):
                  np.min(certainties[k1]),
                  np.mean(certainties[k1]), np.max(certainties[k1]))
   plt.subplots_adjust(hspace=0.05, wspace=0.05)
-  plt.savefig(save_path, bbox_inches='tight')
+  plt.savefig(save_path, bbox_inches='tight', dpi=600)
 
 
 def _read_valid_part_of_annotated_image(experiment_path, orig_name):
