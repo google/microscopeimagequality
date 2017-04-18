@@ -653,15 +653,13 @@ def get_model_and_metrics(images,
   # be zeros. In this case, labels[i] should be -1. Otherwise, labels[i]
   # reflects the true class.
   label_exists = tf.equal(tf.reduce_sum(one_hot_labels, 1), 1)
-  label_for_unlabeled_data = tf.constant(
-      -1, dtype=tf.int64, shape=[one_hot_labels.get_shape()[0]])
+  label_for_unlabeled_data = tf.multiply(
+      tf.constant(-1, dtype=tf.int64),
+      tf.ones([tf.shape(one_hot_labels)[0]], dtype=tf.int64))
   labels = tf.where(label_exists,
                     tf.argmax(one_hot_labels, 1), label_for_unlabeled_data)
   probabilities = tf.nn.softmax(logits)
   predictions = tf.argmax(logits, 1)
-
-  assert labels.get_shape()[0] == probabilities.get_shape()[0]
-  assert labels.get_shape()[0] == predictions.get_shape()[0]
 
   return ModelAndMetrics(logits, labels, probabilities, predictions)
 

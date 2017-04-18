@@ -216,32 +216,14 @@ def get_image_tiles_tensor(image, label, image_path, patch_width):
     Tensors tiles, size [num_tiles x patch_width x patch_width x 1], labels,
     size [num_tiles x num_classes], and image_paths, size [num_tiles x 1].
   """
-  assert len(image.get_shape().as_list()) == 3
-  size = tf.constant([patch_width, patch_width], dtype=tf.int32)
-  image_height, image_width, _ = image.get_shape().as_list()
-  expanded_label = tf.expand_dims(label, dim=0)
-  expanded_image_path = tf.expand_dims(image_path, dim=0)
-  for j in range(image_height / patch_width):
-    for i in range(image_width / patch_width):
-      offsets = tf.constant(
-          np.array(
-              [[(j + 0.5) * patch_width, (i + 0.5) * patch_width]],
-              dtype=np.float32))
-      patch = tf.image.extract_glimpse(
-          tf.expand_dims(
-              image, dim=0),
-          size,
-          offsets,
-          centered=False,
-          normalized=False)
-      if i == 0 and j == 0:
-        tiles = patch
-        labels = expanded_label
-        image_paths = expanded_image_path
-      else:
-        tiles = tf.concat([tiles, patch], 0)
-        labels = tf.concat([labels, expanded_label], 0)
-        image_paths = tf.concat([image_paths, expanded_image_path], 0)
+  tiles_before_reshape = tf.extract_image_patches(
+      tf.expand_dims(image, dim=0), [1, patch_width, patch_width, 1],
+      [1, patch_width, patch_width, 1], [1, 1, 1, 1], 'VALID')
+  tiles = tf.reshape(tiles_before_reshape, [-1, patch_width, patch_width, 1])
+
+  labels = tf.tile(tf.expand_dims(label, dim=0), [tf.shape(tiles)[0], 1])
+  image_paths = tf.tile(
+      tf.expand_dims(image_path, dim=0), [tf.shape(tiles)[0], 1])
 
   return tiles, labels, image_paths
 
