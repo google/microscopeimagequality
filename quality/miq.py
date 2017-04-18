@@ -5,23 +5,24 @@ convolutional layers, two pooling layers, followed by two fully connected
 layers. A single dropout layer is used between the two fully connected layers.
 """
 # Copyright 2017 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import  tensorflow.contrib.slim as slim
+import tensorflow.contrib.slim as slim
 
 import tensorflow as tf
 import logging
+
 
 def add_loss(logits, one_hot_labels, use_rank_loss=False):
   """Add loss function to tf.losses.
@@ -131,20 +132,23 @@ def model(images, num_classes, is_training, rate):
 
   return net
 
+
 def ranked_probability_score(predictions, targets, dim, name=None):
   r"""Calculate the Ranked Probability Score (RPS).
 
   RPS is given by the formula
 
-    \frac{1}{K - 1} \sum_{k=1}^K (CDF_{prediction,k} - CDF_{target,k}) ^ 2
+    sum_{k=1}^K (CDF_{prediction,k} - CDF_{target,k}) ^ 2
 
   where CDF denotes the emperical CDF and each value of `k` denotes a different
-  class, in rank order.
+  class, in rank order. The range of possible RPS values is `[0, K - 1]`, where
+  `K` is the total number of classes. Perfect predictions have a score of zero.
 
   This is a better metric than cross-entropy for probabilistic classification of
   ranked targets, because it penalizes wrong guesses more harshly if they
   predict a target that is further away. For deterministic predictions (zero
-  or one) the average RPS score corresponds to mean absolute error.
+  or one) ranked probability score is equal to absolute error in the number of
+  classes.
 
   Importantly (like cross entropy), it is a strictly proper score rule: the
   highest expected reward is obtained by predicting the true probability
@@ -152,6 +156,11 @@ def ranked_probability_score(predictions, targets, dim, name=None):
 
   For these reasons, it is widely used for evaluating weather forecasts, which
   are a prototypical use case for probabilistic regression.
+
+  References:
+    Murphy AH. A Note on the Ranked Probability Score. J. Appl. Meteorol. 1971,
+    10:155-156.
+    http://dx.doi.org/10.1175/1520-0450(1971)010<0155:ANOTRP>2.0.CO;2
 
   Args:
     predictions: tf.Tensor with probabilities for each class.
@@ -166,8 +175,8 @@ def ranked_probability_score(predictions, targets, dim, name=None):
   Raises:
     ValueError: if predictions and targets do not have the same shape.
   """
-  with tf.name_scope(name, 'ranked_probability_score',
-                     [predictions, targets]) as scope:
+  with tf.name_scope(name, 'ranked_probability_score', [predictions,
+                                                        targets]) as scope:
     predictions = tf.convert_to_tensor(predictions, name='predictions')
     targets = tf.convert_to_tensor(targets, name='targets')
 
@@ -181,17 +190,12 @@ def ranked_probability_score(predictions, targets, dim, name=None):
     cdf_pred = tf.cumsum(predictions, dim)
     cdf_target = tf.cumsum(targets, dim)
 
-    num_classes = tf.cast(tf.shape(predictions)[dim], dtype=predictions.dtype)
-    scale = 1.0 / (num_classes - 1.0)
-
     values = (cdf_pred - cdf_target)**2
 
     # If desired, we could add arbitrary weighting in this sum along dim.
     # That would still be a proper scoring rule (it's equivalent to rescaling
     # the discretization):
     # https://www.stat.washington.edu/research/reports/2008/tr533.pdf
-    summed = tf.reduce_sum(values, dim)
-
-    rps = tf.multiply(scale, summed, name=scope)
+    rps = tf.reduce_sum(values, dim, name=scope)
 
     return rps
