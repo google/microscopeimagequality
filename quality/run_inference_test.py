@@ -79,7 +79,7 @@ class RunInferenceTest(tf.test.TestCase):
     expected_size = Image.open(orig_name, 'r').size
     expected_visualization_path = os.path.join(
         self.test_dir,
-        'actual2_pred1_mean_certainty=0.300_orig_name=%s' % test_filename)
+        'actual2_pred1_mean_certainty=0.300orig_name=%s' % test_filename)
     expected_predictions_path = os.path.join(self.test_dir,
                                              constants.PREDICTIONS_MASK_FORMAT %
                                              test_filename)
