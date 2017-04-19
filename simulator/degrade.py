@@ -137,7 +137,8 @@ def get_airy_psf(psf_width_pixels,
   """Generate Airy point spread function (psf) kernel from optical parameters.
 
   Args:
-    psf_width_pixels: Integer, the width of the psf, in pixels.
+    psf_width_pixels: Integer, the width of the psf, in pixels. Must be odd.
+      If this is even, testGetAiryPsfGoldenZeroDepth() will fail.
     psf_width_meters: Float, the width of the psf, in meters.
     z: Float, z-coordinate relative to the focal plane, in meters.
     wavelength: Float, wavelength of light in meters.
@@ -147,7 +148,14 @@ def get_airy_psf(psf_width_pixels,
 
   Returns:
     The psf kernel, a numpy float 2D array.
+
+  Raises:
+    ValueError: If psf_width_pixels is not an odd number.
   """
+  if psf_width_pixels % 2 == 0:
+    raise ValueError(
+        'psf_width_pixels must be an odd number, but is %d.' % psf_width_pixels)
+
   meters_per_pixel = psf_width_meters / psf_width_pixels
   psf = np.zeros((psf_width_pixels, psf_width_pixels), dtype=np.float64)
   for i in xrange(psf_width_pixels):
@@ -248,7 +256,8 @@ def degrade_images(input_glob,
                    numerical_aperture=0.5,
                    refractive_index=1.0,
                    psf_width_pixels=50,
-                   pixel_size_meters=0.65e-6):
+                   pixel_size_meters=0.65e-6,
+                   skip_apply_poisson_noise=False):
   """Create a PSF and degrade all specified images.
 
   Args:
@@ -266,6 +275,7 @@ def degrade_images(input_glob,
     psf_width_pixels: Integer, the width of the psf, in pixels.
     pixel_size_meters: Float, width of each image pixel in meters. This is the
       magnified camera pixel size.
+    skip_apply_poisson_noise: Boolean, skip application of Poisson noise.
 
   Raises:
     ValueError: If no images are found by the specified glob.
@@ -287,7 +297,10 @@ def degrade_images(input_glob,
     blurred_image = degrader.apply_blur_kernel(image, psf)
     exposure_adjusted_image = degrader.set_exposure(blurred_image,
                                                     exposure_factor)
-    noisy_image = degrader.apply_poisson_noise(exposure_adjusted_image)
+    if skip_apply_poisson_noise:
+      noisy_image = exposure_adjusted_image
+    else:
+      noisy_image = degrader.apply_poisson_noise(exposure_adjusted_image)
 
     output_filename = os.path.join(output_path, '%s.png' %
                                    os.path.splitext(os.path.basename(path))[0])
