@@ -255,7 +255,7 @@ def degrade_images(input_glob,
                    wavelength=500e-9,
                    numerical_aperture=0.5,
                    refractive_index=1.0,
-                   psf_width_pixels=50,
+                   psf_width_pixels=51,
                    pixel_size_meters=0.65e-6,
                    skip_apply_poisson_noise=False):
   """Create a PSF and degrade all specified images.
@@ -272,7 +272,7 @@ def degrade_images(input_glob,
     wavelength: Float, wavelength of light in meters.
     numerical_aperture: Float, numerical aperture of the imaging lens.
     refractive_index: Float, refractive index of the imaging medium.
-    psf_width_pixels: Integer, the width of the psf, in pixels.
+    psf_width_pixels: Integer, the width of the psf, in pixels. Must be odd.
     pixel_size_meters: Float, width of each image pixel in meters. This is the
       magnified camera pixel size.
     skip_apply_poisson_noise: Boolean, skip application of Poisson noise.
