@@ -8,6 +8,33 @@ as well.
 
 This is not an official Google product.
 
+## Getting started
+
+Clone the `main` branch of this repository
+```sh
+git clone -b main <repository_url>
+```
+
+Add path to local repository (e.g. `/Users/user/my_repo/All-projects`)
+to `PYTHONPATH` environment variable:
+```sh
+export PYTHONPATH="${PYTHONPATH}:/Users/user/my_repo/All-projects"
+```
+
+Run the tests to make sure everything works. Install an missing packages.
+```sh
+python quality/miq_test.py
+python simulator/degrade_test.py
+...
+```
+
+You should now be able to either run the modules below, or directly access the
+module functions in a jupyter notebook or from your own python module:
+```sh
+from simulator import degrade
+degrade.degrade(...)
+```
+
 ## Running inference
 
 ### Requirements for running inference
@@ -51,8 +78,3 @@ images, `.png` of `.tif` format, all with the same width and height.
 1. Launch `miq_eval.py` with a held-out test dataset.
 1. Use TensorBoard to view training and eval progress.
 1. When satisfied with model accuracy, save the `model.ckpt` files for later use.
-
-## Running tests
-
-1. Add path to `quality` directory to PYTHONPATH.
-1. Then run each test. For example,  `python quality/miq_test.py`.
