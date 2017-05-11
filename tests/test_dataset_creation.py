@@ -10,7 +10,7 @@ import quality.dataset_creation
 FLAGS = tensorflow.app.flags.FLAGS
 
 
-class DatasetCreationTest(unittest.TestCase):
+class Creation(unittest.TestCase):
     def setUp(self):
         self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
                                             , "data")

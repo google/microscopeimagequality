@@ -8,7 +8,7 @@ import quality.validation
 FLAGS = tensorflow.app.flags.FLAGS
 
 
-class ValidateDataTest(unittest.TestCase):
+class Validation(unittest.TestCase):
     def setUp(self):
         self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 

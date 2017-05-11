@@ -11,7 +11,7 @@ import quality.degrade
 FLAGS = tensorflow.app.flags.FLAGS
 
 
-class DegradeTest(unittest.TestCase):
+class Degrade(unittest.TestCase):
     def setUp(self):
         """Set up paths to test data."""
         self.test_data_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))

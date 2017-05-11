@@ -11,7 +11,7 @@ import quality.evaluation
 FLAGS = tensorflow.app.flags.FLAGS
 
 
-class MiqEvalTest(tensorflow.test.TestCase):
+class Evaluation(tensorflow.test.TestCase):
     def setUp(self):
         self.batch_size = 4
         self.test_data_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")

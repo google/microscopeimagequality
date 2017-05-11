@@ -19,7 +19,7 @@ TFRECORD_LABEL_ORDERING = [
 ]
 
 
-class DataProviderTest(unittest.TestCase):
+class Provider(unittest.TestCase):
     def setUp(self):
         self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
                                             , "data")

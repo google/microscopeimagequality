@@ -14,7 +14,7 @@ import quality.inference
 FLAGS = tensorflow.app.flags.FLAGS
 
 
-class RunInferenceTest(tensorflow.test.TestCase):
+class Inference(tensorflow.test.TestCase):
     def setUp(self):
         self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
                                             , "data")
