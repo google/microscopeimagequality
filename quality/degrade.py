@@ -31,10 +31,10 @@ import os
 
 import numpy
 import past.builtins
-import png
 import scipy.integrate
 import scipy.signal
 import scipy.special
+import skimage.io
 
 import dataset_creation
 
@@ -238,13 +238,8 @@ def write_png(image, path):
         raise ValueError('Exceeds dimensions %g, %g.' % (numpy.min(image),
                                                          numpy.max(image)))
     image = (65535 * image).astype(numpy.uint16)
-    with open(path, 'w') as f:
-        writer = png.Writer(
-            width=image.shape[1],
-            height=image.shape[0],
-            bitdepth=16,
-            greyscale=True)
-        writer.write(f, image.tolist())
+
+    skimage.io.imsave(path, image)
 
 
 def degrade_images(input_glob,

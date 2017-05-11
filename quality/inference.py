@@ -25,10 +25,8 @@ import logging
 import os
 import sys
 
-import PIL
 import numpy
-import png
-import skimage.external.tifffile
+import skimage.io
 import tensorflow
 
 import data_provider
@@ -140,9 +138,9 @@ def save_masks_and_annotated_visualization(orig_name,
         raise ValueError('File for annotating does not exist: %s.' % orig_name)
     file_extension = os.path.splitext(orig_name)[1]
     if file_extension == '.png':
-        output_width, output_height = PIL.Image.open(orig_name, 'r').size
+        output_height, output_width = skimage.io.imread(orig_name).shape
     elif file_extension == '.tif':
-        output_height, output_width = skimage.external.tifffile.TiffFile(orig_name, 'r').asarray().shape
+        output_height, output_width = skimage.io.imread(orig_name).shape
     else:
         raise ValueError('Unsupported file extension %s', file_extension)
     logging.info('Original image size %d x %d', output_height, output_width)
@@ -158,17 +156,7 @@ def save_masks_and_annotated_visualization(orig_name,
             (0, y_pad), (0, x_pad), (0, 0))
         im_padded = numpy.pad(im, pad_size, 'constant')
 
-        if not is_greyscale_mask:
-            img = PIL.Image.fromarray(im_padded)
-            img.save(image_output_path)
-        else:
-            with open(image_output_path, 'w') as f:
-                writer = png.Writer(
-                    width=im_padded.shape[1],
-                    height=im_padded.shape[0],
-                    bitdepth=16,
-                    greyscale=True)
-                writer.write(f, im_padded.tolist())
+        skimage.io.imsave(image_output_path, im_padded)
 
     orig_name_png = os.path.splitext(os.path.basename(orig_name))[0] + '.png'
     visualized_image_name = ('actual%g_pred%g_mean_certainty=%0.3f' +

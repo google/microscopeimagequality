@@ -26,10 +26,10 @@ import logging
 import os
 import sys
 
-import PIL
 import matplotlib
 import matplotlib.pyplot
 import numpy
+import skimage.io
 import tensorflow
 
 import constants
@@ -214,14 +214,14 @@ def _read_valid_part_of_annotated_image(experiment_path, orig_name):
         raise ValueError('File %s not found' % orig_name)
     annotated_filename = all_files[filename_index]
 
-    image = numpy.array(
-        PIL.Image.open(os.path.join(experiment_path, annotated_filename)))
-    mask_path = os.path.join(experiment_path,
-                             constants.VALID_MASK_FORMAT % orig_name + '.png')
+    image = skimage.io.imread(os.path.join(experiment_path, annotated_filename))
+
+    mask_path = os.path.join(experiment_path, constants.VALID_MASK_FORMAT % orig_name + '.png')
+
     if not os.path.isdir(mask_path):
         logging.info('No mask found at %s', mask_path)
     else:
-        mask = numpy.array(PIL.Image.open(mask_path))
+        mask = skimage.io.imread(mask_path)
         # Get the upper-left crop that is valid (where mask > 0).
         max_valid_row = numpy.argwhere(numpy.sum(mask, 1))[-1]
         max_valid_column = numpy.argwhere(numpy.sum(mask, 0))[-1]

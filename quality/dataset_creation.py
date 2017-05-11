@@ -19,9 +19,8 @@ import glob
 import logging
 import os
 
-import PIL.Image
 import numpy
-import skimage.external.tifffile
+import skimage.io
 import tensorflow
 import tensorflow.core.example
 
@@ -359,17 +358,10 @@ def read_16_bit_greyscale(path):
   """
 
     file_extension = os.path.splitext(path)[1]
+
     assert (file_extension in _SUPPORTED_EXTENSIONS), 'path is %s' % path
-    if file_extension == '.png':
-        img = PIL.Image.open(path, 'r')
-        assert img.mode == 'I;16' or img.mode == 'I', 'Mode is %s for file %s.' % (
-            img.mode, path)
-        (width, height) = img.size
-        greyscale_map = list(img.getdata())
-        greyscale_map = numpy.array(greyscale_map)
-        greyscale_map = greyscale_map.reshape((height, width))
-    else:
-        greyscale_map = skimage.external.tifffile.TiffFile(path, 'r').asarray()
+
+    greyscale_map = skimage.io.imread(path)
 
     # Normalize to float in range [0, 1]
     assert numpy.max(greyscale_map) <= 65535

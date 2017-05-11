@@ -51,8 +51,6 @@ def validate(images, width, height, patch_width):
     image_paths = []
 
     for image in images:
-        print(image)
-
         image_paths += quality.dataset_creation.get_images_from_glob(image, _MAX_IMAGES_TO_VALIDATE)
 
     click.echo('Found {} paths'.format(len(image_paths)))

@@ -41,6 +41,7 @@ import matplotlib.pyplot
 import numpy
 import scipy.misc
 import scipy.stats
+import skimage.io
 import tensorflow
 import tensorflow.contrib.slim
 import tensorflow.python.ops
@@ -62,32 +63,31 @@ METHOD_AVERAGE = 'average'
 METHOD_PRODUCT = 'product'
 
 
-class WholeImagePrediction(
-    collections.namedtuple('WholeImagePrediction',
-                           ['predictions', 'certainties', 'probabilities'])):
-    """Prediction for a whole image.
-
-     Properties:
-       predicitons: The integer index representing the class with highest
-       average probability.
-       certainties: A dictionary mapping prediction certainty type to float
-         certainty values.
-       probabilities: 1D numpy float array of the class probabilities.
-  """
-
-
-class ModelAndMetrics(
-    collections.namedtuple(
-        'ModelAndMetrics',
-        ['logits', 'labels', 'probabilities', 'predictions'])):
-    """Object for model and metrics tensors.
+class WholeImagePrediction(collections.namedtuple('WholeImagePrediction', ['predictions', 'certainties', 'probabilities'])):
+    """
+    Prediction for a whole image.
 
     Properties:
-      logits: Tensor of logits of size [batch_size x num_classes].
-      labels: Tensor of labels of size [batch_size].
-      probabilities: Tensor of probabilities of size [batch_size x num_classes].
-      predictions: Tensor of predictions of size [batch_size].
-  """
+        predicitons: The integer index representing the class with highest average probability.
+        certainties: A dictionary mapping prediction certainty type to float certainty values.
+        probabilities: 1D numpy float array of the class probabilities.
+    """
+    def __init__(self):
+        super(WholeImagePrediction, self).__init__()
+
+
+class ModelAndMetrics(collections.namedtuple('ModelAndMetrics', ['logits', 'labels', 'probabilities', 'predictions'])):
+    """
+    Object for model and metrics tensors.
+
+    Properties:
+        logits: Tensor of logits of size [batch_size x num_classes].
+        labels: Tensor of labels of size [batch_size].
+        probabilities: Tensor of probabilities of size [batch_size x num_classes].
+        predictions: Tensor of predictions of size [batch_size].
+    """
+    def __init__(self):
+        super(ModelAndMetrics, self).__init__()
 
 
 flags.DEFINE_string('data_globs', None,
@@ -234,8 +234,7 @@ def visualize_image_predictions(patches,
 
     # Save it.
     if output_path is not None:
-        im = PIL.Image.fromarray(image_rgb)
-        im.save(output_path, 'w')
+        skimage.io.imsave(output_path, image_rgb)
 
     # Expand from to 4D shape required by TensorFlow.
     return numpy.expand_dims(image_rgb, 0)

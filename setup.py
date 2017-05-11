@@ -11,7 +11,6 @@ setuptools.setup(
         "matplotlib",
         "numpy",
         "pillow",
-        "pypng",
         "scikit-image",
         "scipy",
         "tensorflow"

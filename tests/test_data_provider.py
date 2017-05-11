@@ -3,7 +3,7 @@ import tempfile
 
 import numpy
 import numpy.testing
-import png
+import skimage.io
 import tensorflow
 import tensorflow.contrib.slim
 
@@ -49,9 +49,7 @@ def test_get_num_records():
 
 def save16_bit_png(filename, im):
     path = os.path.join(test_dir, filename)
-    with open(path, "w") as f:
-        writer = png.Writer(width=im.shape[1], height=im.shape[0], bitdepth=16, greyscale=True)
-        writer.write(f, im.tolist())
+    skimage.io.imsave(path, im)
 
 
 def get_tf_session(graph):
