@@ -1,7 +1,13 @@
 import setuptools
 
 setuptools.setup(
+    entry_points={
+        "console_scripts": [
+            "quality=quality.application:command"
+        ]
+    },
     install_requires=[
+        "click",
         "matplotlib",
         "numpy",
         "pillow",
