@@ -29,11 +29,10 @@ import dataset_creation
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-
 flags = tensorflow.app.flags
 
 flags.DEFINE_string('image_globs_list', None, 'Comma separated list of globs to'
-    'images for validating.')
+                                              'images for validating.')
 flags.DEFINE_integer(
     'image_width', None,
     'Integer, width to crop to. Must be multiple of model_patch_width.')
@@ -47,7 +46,7 @@ _MAX_IMAGES_TO_VALIDATE = 1e6
 
 
 def check_duplicate_image_name(image_paths):
-  """Check that there are no duplicate names (without path or extension).
+    """Check that there are no duplicate names (without path or extension).
 
   Args:
     image_paths: List of strings, paths to images.
@@ -55,16 +54,16 @@ def check_duplicate_image_name(image_paths):
   Raises:
     ValueError: If there is a duplicate image name.
   """
-  image_names = [os.path.basename(os.path.splitext(p)[0]) for p in image_paths]
-  num_images = len(image_names)
-  num_unique = len(set(image_names))
-  if num_images != num_unique:
-    raise ValueError('Found %d duplicate images.' % (num_images - num_unique))
-  logging.info('Found no duplicates in %d images.', num_images)
+    image_names = [os.path.basename(os.path.splitext(p)[0]) for p in image_paths]
+    num_images = len(image_names)
+    num_unique = len(set(image_names))
+    if num_images != num_unique:
+        raise ValueError('Found %d duplicate images.' % (num_images - num_unique))
+    logging.info('Found no duplicates in %d images.', num_images)
 
 
 def check_image_dimensions(image_paths, image_height, image_width):
-  """Check that the image dimensions are valid.
+    """Check that the image dimensions are valid.
 
   A valid image has height and width no smaller than the specified height,
   width.
@@ -77,44 +76,44 @@ def check_image_dimensions(image_paths, image_height, image_width):
   Raises:
     ValueError: If there is an invalid image dimension
   """
-  logging.info('Using image height, width %s', str((image_height, image_width)))
-  bad_images = []
-  for path in image_paths:
-    logging.info('Trying to read image %s', path)
-    image = dataset_creation.read_16_bit_greyscale(path)
+    logging.info('Using image height, width %s', str((image_height, image_width)))
+    bad_images = []
+    for path in image_paths:
+        logging.info('Trying to read image %s', path)
+        image = dataset_creation.read_16_bit_greyscale(path)
 
-    if image.shape[0] < image_height or image.shape[1] < image_width:
-      bad_images.append(path)
-      logging.info('Image %s dimension %s is too small.', path,
-                   str(image.shape))
+        if image.shape[0] < image_height or image.shape[1] < image_width:
+            bad_images.append(path)
+            logging.info('Image %s dimension %s is too small.', path,
+                         str(image.shape))
 
-  logging.info('Done checking images')
-  logging.info('Found %d bad images.', len(bad_images))
-  if bad_images:
-    raise ValueError('Found %d bad images! \n %s' %
-                     (len(bad_images), '\n'.join(bad_images)))
+    logging.info('Done checking images')
+    logging.info('Found %d bad images.', len(bad_images))
+    if bad_images:
+        raise ValueError('Found %d bad images! \n %s' %
+                         (len(bad_images), '\n'.join(bad_images)))
 
 
 def main(_):
-  image_paths = []
-  for glob in FLAGS.image_globs_list.split(','):
-    print glob
-    image_paths += dataset_creation.get_images_from_glob(
-        glob, _MAX_IMAGES_TO_VALIDATE)
-  logging.info('Found %d paths', len(image_paths))
-  if len(image_paths) == 0:
-    raise ValueError('No images found.')
+    image_paths = []
+    for glob in FLAGS.image_globs_list.split(','):
+        print glob
+        image_paths += dataset_creation.get_images_from_glob(
+            glob, _MAX_IMAGES_TO_VALIDATE)
+    logging.info('Found %d paths', len(image_paths))
+    if len(image_paths) == 0:
+        raise ValueError('No images found.')
 
-  check_duplicate_image_name(image_paths)
+    check_duplicate_image_name(image_paths)
 
-  if FLAGS.image_width is None or FLAGS.image_height is None:
-    height, width = dataset_creation.image_size_from_glob(
-        FLAGS.image_globs_list[0], FLAGS.model_patch_width)
-  else:
-    height, width = FLAGS.image_height, FLAGS.image_width
+    if FLAGS.image_width is None or FLAGS.image_height is None:
+        height, width = dataset_creation.image_size_from_glob(
+            FLAGS.image_globs_list[0], FLAGS.model_patch_width)
+    else:
+        height, width = FLAGS.image_height, FLAGS.image_width
 
-  check_image_dimensions(image_paths, height, width)
+    check_image_dimensions(image_paths, height, width)
 
 
 if __name__ == '__main__':
-  tensorflow.app.run()
+    tensorflow.app.run()
