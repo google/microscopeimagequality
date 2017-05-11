@@ -13,6 +13,7 @@ setuptools.setup(
         "pillow",
         "scikit-image",
         "scipy",
+        "six",
         "tensorflow"
     ],
     name="quality",

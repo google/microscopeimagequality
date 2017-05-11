@@ -17,14 +17,17 @@ IMAGE_HEIGHT = 520
 FEATURE_IMAGE = 'image'
 FEATURE_IMAGE_CLASS = 'image/class'
 FEATURE_IMAGE_PATH = 'image/path'
+
 _ITEMS_TO_DESCRIPTIONS = {
     FEATURE_IMAGE: 'A [width x width x 1] grayscale image.',
     FEATURE_IMAGE_CLASS: 'A single integer between 0 and [num_classes-1]',
     FEATURE_IMAGE_PATH: 'A string indicating path to image.',
 }
+
 # Range of random brightness factors to scale training data.
 _BRIGHTNESS_MIN_FACTOR = 0.2
 _BRIGHTNESS_MAX_FACTOR = 5.0
+
 # Range of random image brightness offsets for training data.
 _BRIGHTNESS_MIN_OFFSET = 1.0 / 65535
 _BRIGHTNESS_MAX_OFFSET = 1000.0 / 65535
@@ -58,8 +61,7 @@ def get_num_records(tf_record_path):
         return num_records
 
 
-def get_split(split_name, tfrecord_file_pattern, num_classes, image_width,
-              image_height):
+def get_split(split_name, tfrecord_file_pattern, num_classes, image_width, image_height):
     """Gets a dataset tuple from tfrecord, to be used with DatasetDataProvider.
 
   Args:

@@ -20,7 +20,6 @@ import collections
 import csv
 import logging
 import os
-import six
 
 import PIL.Image
 import PIL.ImageDraw
@@ -33,8 +32,6 @@ import tensorflow
 import tensorflow.contrib.slim
 import tensorflow.python.ops
 
-import data_provider
-import dataset_creation
 import miq
 
 flags = tensorflow.app.flags
@@ -59,8 +56,6 @@ class WholeImagePrediction(collections.namedtuple('WholeImagePrediction', ['pred
         certainties: A dictionary mapping prediction certainty type to float certainty values.
         probabilities: 1D numpy float array of the class probabilities.
     """
-    def __init__(self):
-        super(WholeImagePrediction, self).__init__()
 
 
 class ModelAndMetrics(collections.namedtuple('ModelAndMetrics', ['logits', 'labels', 'probabilities', 'predictions'])):
@@ -73,8 +68,6 @@ class ModelAndMetrics(collections.namedtuple('ModelAndMetrics', ['logits', 'labe
         probabilities: Tensor of probabilities of size [batch_size x num_classes].
         predictions: Tensor of predictions of size [batch_size].
     """
-    def __init__(self):
-        super(ModelAndMetrics, self).__init__()
 
 
 flags.DEFINE_string('data_globs', None,
@@ -846,96 +839,6 @@ def save_prediction_histogram(predictions, save_path, num_classes, log=False):
     matplotlib.pyplot.xlabel('predicted class')
     matplotlib.pyplot.grid('off')
     matplotlib.pyplot.savefig(open(save_path, 'w'), bbox_inches='tight')
-
-
-def main(_):
-    list_of_image_globs = FLAGS.data_globs.split(',')
-    num_classes = len(list_of_image_globs)
-
-    output_tfrecord_file_pattern = 'data_%s.sstable'
-
-    image_size = dataset_creation.image_size_from_glob(list_of_image_globs[0],
-                                                       FLAGS.patch_width)
-
-    # Read images and convert to TFExamples in an TFRecord.
-    dataset_creation.dataset_to_examples_in_tfrecord(
-        list_of_image_globs,
-        FLAGS.eval_dir,
-        output_tfrecord_file_pattern % 'test',
-        num_classes,
-        image_width=image_size.width,
-        image_height=image_size.height,
-        image_background_value=FLAGS.image_background_value,
-        normalize=False)
-
-    tfexamples_tfrecord_file_pattern = os.path.join(FLAGS.eval_dir,
-                                                    output_tfrecord_file_pattern)
-
-    g = tensorflow.Graph()
-    with g.as_default():
-        # All patches evaluated in a batch correspond to one single input image.
-        batch_size = int(image_size.height * image_size.width / FLAGS.patch_width
-                         ** 2)
-
-        images, one_hot_labels, _, num_samples = data_provider.provide_data(
-            tfexamples_tfrecord_file_pattern,
-            split_name='test',
-            batch_size=batch_size,
-            num_classes=num_classes,
-            image_width=image_size.width,
-            image_height=image_size.height,
-            patch_width=FLAGS.patch_width,
-            randomize=False)
-
-        logits, labels, probabilities, predictions = get_model_and_metrics(
-            images,
-            num_classes,
-            one_hot_labels,
-            is_training=False,
-            model_id=FLAGS.model_id)
-
-        # Define the loss
-        miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
-        loss = tensorflow.losses.get_total_loss()
-
-        # Additional aggregate metrics
-        aggregated_prediction, aggregated_label = get_aggregated_prediction(
-            probabilities, labels, batch_size)
-        names_to_values, names_to_updates = tensorflow.contrib.slim.metrics.aggregate_metric_map({
-            'Accuracy':
-                tensorflow.contrib.metrics.streaming_accuracy(predictions, labels),
-            'Mean Loss':
-                tensorflow.contrib.metrics.streaming_mean(loss),
-            'Aggregated Accuracy':
-                tensorflow.contrib.metrics.streaming_accuracy(aggregated_prediction, aggregated_label),
-        })
-
-        for name, value in six.iteritems(names_to_values):
-            tensorflow.summary.scalar(name, value)
-
-        tensorflow.summary.histogram(FLAGS.eval_type + ' images', images)
-        tensorflow.summary.histogram(FLAGS.eval_type + ' labels', labels)
-        tensorflow.summary.histogram(FLAGS.eval_type + ' predictions', predictions)
-        tensorflow.summary.histogram(FLAGS.eval_type + ' probabilities', probabilities)
-
-        annotate_classification_errors(
-            images,
-            predictions,
-            labels,
-            probabilities,
-            image_height=image_size[0],
-            image_width=image_size[1])
-
-        # This ensures that we evaluate over exactly all samples.
-        num_batches = num_samples
-
-        tensorflow.contrib.slim.evaluation.evaluation_loop(
-            master='',
-            checkpoint_dir=FLAGS.checkpoint_dir,
-            logdir=FLAGS.eval_dir,
-            num_evals=num_batches,
-            eval_op=names_to_updates.values(),
-            eval_interval_secs=FLAGS.eval_interval_secs)
 
 
 if __name__ == '__main__':
