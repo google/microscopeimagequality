@@ -2,7 +2,13 @@ import setuptools
 
 setuptools.setup(
     install_requires=[
-
+        "matplotlib",
+        "numpy",
+        "pillow",
+        "pypng",
+        "scikit-image",
+        "scipy",
+        "tensorflow"
     ],
     name="quality",
     package_data={

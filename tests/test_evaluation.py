@@ -369,11 +369,12 @@ class Evaluation(tensorflow.test.TestCase):
         num_classes = 3
         aggregate_probabilities = numpy.ones((self.batch_size, num_classes))
         aggregate_labels = range(self.batch_size)
-        certainties = {}
-        certainties['mean'] = [0.5] * self.batch_size
-        certainties['max'] = [0.8] * self.batch_size
-        certainties['aggregate'] = [0.9] * self.batch_size
-        certainties['weighted'] = [1.0] * self.batch_size
+        certainties = {
+            'mean': [0.5] * self.batch_size,
+            'max': [0.8] * self.batch_size,
+            'aggregate': [0.9] * self.batch_size,
+            'weighted': [1.0] * self.batch_size
+        }
         orig_names = ['orig_name'] * self.batch_size
         aggregate_predictions = range(self.batch_size)
         output_path = os.path.join(self.test_dir, 'results.csv')
@@ -386,11 +387,12 @@ class Evaluation(tensorflow.test.TestCase):
         aggregate_probabilities = numpy.ones((self.batch_size, num_classes))
         aggregate_probabilities[0, 2] = 3
         aggregate_labels = range(self.batch_size)
-        certainties = {}
-        certainties['mean'] = [numpy.float64(1.0 / 3)] * self.batch_size
-        certainties['max'] = [0.0] * self.batch_size
-        certainties['aggregate'] = [0.9] * self.batch_size
-        certainties['weighted'] = [1.0] * self.batch_size
+        certainties = {
+            'mean': [numpy.float64(1.0 / 3)] * self.batch_size,
+            'max': [0.0] * self.batch_size,
+            'aggregate': [0.9] * self.batch_size,
+            'weighted': [1.0] * self.batch_size
+        }
         orig_names = ['orig_name'] * self.batch_size
         aggregate_predictions = range(self.batch_size)
         test_directory = os.path.join(self.test_dir, 'save_load_test')

@@ -108,8 +108,6 @@ class Creation(unittest.TestCase):
         self.assertEquals(image.dtype, numpy.float32)
 
     def testGetImagePaths(self):
-        directory_images = self.input_directory
-
         paths = quality.dataset_creation.get_image_paths(
             os.path.join(self.input_directory, 'images_for_glob_test'), 100)
         for path in paths:
