@@ -1,27 +1,10 @@
-"""Unittest for degrade.py."""
-# Copyright 2017 Google Inc.
-# 
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# 
-#     http://www.apache.org/licenses/LICENSE-2.0
-# 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import os
 import tempfile
 import unittest
-
-import degrade
+from quality import degrade
 import numpy as np
 import tensorflow as tf
-
-from quality.quality import dataset_creation
+from quality import dataset_creation
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -116,8 +99,8 @@ class DegradeTest(unittest.TestCase):
     psf = degrade.get_airy_psf(21, 5e-6, 4.0e-6, 500e-9, 0.5, 1.0)
     expected_psf = self.get_test_image("psf.png")
     np.testing.assert_almost_equal(expected_psf, psf, 4)
-    
-  def testGetAiryPsfGoldenZeroDepth(self):    
+
+  def testGetAiryPsfGoldenZeroDepth(self):
     psf = degrade.get_airy_psf(5, 5e-6, 0.0e-6, 500e-9, 0.5, 1.0)
     # This should be a delta function for large enough pixel sizes.
     expected_psf = np.zeros((5, 5))
