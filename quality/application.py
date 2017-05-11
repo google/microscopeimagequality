@@ -9,6 +9,8 @@ import quality.dataset_creation
 import quality.evaluation
 import quality.miq
 import quality.validation
+from quality import dataset_creation, data_provider, miq
+from quality.training import FLAGS
 
 _MAX_IMAGES_TO_VALIDATE = 1e6
 
@@ -116,9 +118,84 @@ def evaluate(images, checkpoint, output, patch_width):
         )
 
 
+# flags.DEFINE_string('data_globs', None, 'Comma-separated string of globs, one per class.')
 @command.command()
-def fit():
-    pass
+@click.argument("images", nargs=-1, type=click.Path(exists=True))
+def fit(images):
+    if not os.path.exists("/tmp/quality-fit/"):
+        os.makedirs("/tmp/quality-fit/")
+
+    num_classes = len(images)
+
+    output_tfrecord_file_pattern = ('worker%g_' % 0) + 'data_%s.tfrecord'
+
+    image_size = dataset_creation.image_size_from_glob(images[0], 84)
+
+    # Read images and convert to TFExamples in an TFRecord.
+    dataset_creation.dataset_to_examples_in_tfrecord(
+        images,
+        "/tmp/quality-fit/",
+        output_tfrecord_file_pattern % 'train',
+        num_classes,
+        image_width=image_size.width,
+        image_height=image_size.height,
+        image_background_value=0.0
+    )
+
+    tfexamples_tfrecord_file_pattern = os.path.join("/tmp/quality-fit/", output_tfrecord_file_pattern)
+
+    graph = tensorflow.Graph()
+
+    with graph.as_default():
+        # If ps_tasks is zero, the local device is used. When using multiple
+        # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
+        # across the different devices.
+        with tensorflow.device(tensorflow.train.replica_device_setter(0)):
+            images, one_hot_labels, _, _ = data_provider.provide_data(
+                tfexamples_tfrecord_file_pattern,
+                split_name='train',
+                batch_size=64,
+                num_classes=num_classes,
+                image_width=image_size.width,
+                image_height=image_size.height,
+                patch_width=84
+            )
+
+            # Visualize the input
+            tensorflow.summary.image('train_input', images)
+            # slim.summaries.add_histogram_summaries([images, labels])
+
+            # Define the model:
+            logits = miq.miq_model(
+                images=images,
+                num_classes=num_classes,
+                is_training=True,
+                model_id=0
+            )
+
+            # Specify the loss function:
+            miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
+            total_loss = tensorflow.losses.get_total_loss()
+            tensorflow.summary.scalar('Total_Loss', total_loss)
+
+            # Specify the optimization scheme:
+            optimizer = tensorflow.train.AdamOptimizer(0.00003)
+
+            # Set up training.
+            train_op = tensorflow.contrib.slim.learning.create_train_op(total_loss, optimizer)
+
+            # Monitor model variables for debugging.
+            # slim.summaries.add_histogram_summaries(slim.get_model_variables())
+
+            # Run training.
+            tensorflow.contrib.slim.learning.train(
+                train_op=train_op,
+                logdir="/tmp/quality-fit/",
+                is_chief=0 == 0,
+                number_of_steps=20000,
+                save_summaries_secs=15,
+                save_interval_secs=60
+            )
 
 
 @command.command()

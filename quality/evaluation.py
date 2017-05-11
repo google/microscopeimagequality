@@ -34,8 +34,6 @@ import tensorflow.python.ops
 
 import miq
 
-flags = tensorflow.app.flags
-
 _IMAGE_ANNOTATION_MAGNIFICATION_PERCENT = 800
 CERTAINTY_NAMES = ['mean', 'max', 'aggregate', 'weighted']
 CERTAINTY_TYPES = {i: CERTAINTY_NAMES[i] for i in range(len(CERTAINTY_NAMES))}
@@ -68,31 +66,6 @@ class ModelAndMetrics(collections.namedtuple('ModelAndMetrics', ['logits', 'labe
         probabilities: Tensor of probabilities of size [batch_size x num_classes].
         predictions: Tensor of predictions of size [batch_size].
     """
-
-
-flags.DEFINE_string('data_globs', None,
-                    'Comma-separated string of globs, one per class.')
-
-flags.DEFINE_float('image_background_value', 0.0,
-                   'Background value of images to subtract.')
-
-flags.DEFINE_integer('patch_width', 84, 'The image patch width, in pixels.')
-
-flags.DEFINE_string('checkpoint_dir', '/tmp/miq/',
-                    'Directory where the model was written to.')
-
-flags.DEFINE_string('eval_dir', '/tmp/miq/',
-                    'Directory where the results are saved to.')
-
-flags.DEFINE_integer('eval_interval_secs', 60,
-                     'The frequency, in seconds, with which evaluation is run.')
-
-flags.DEFINE_string('eval_type', 'eval',
-                    'String, tensorboard label for type of evaluation.')
-
-flags.DEFINE_integer('model_id', 0, 'Model ID.')
-
-FLAGS = flags.FLAGS
 
 
 def annotate_patch(image, prediction, label):
@@ -839,7 +812,3 @@ def save_prediction_histogram(predictions, save_path, num_classes, log=False):
     matplotlib.pyplot.xlabel('predicted class')
     matplotlib.pyplot.grid('off')
     matplotlib.pyplot.savefig(open(save_path, 'w'), bbox_inches='tight')
-
-
-if __name__ == '__main__':
-    tensorflow.app.run()
