@@ -2,12 +2,14 @@ import logging
 import os
 
 import click
+import numpy
 import six
 import tensorflow
 
 import quality.data_provider
 import quality.dataset_creation
 import quality.evaluation
+import quality.inference
 import quality.miq
 import quality.summarize
 import quality.validation
@@ -198,8 +200,102 @@ def fit(images):
 
 
 @command.command()
-def predict():
-    pass
+@click.argument("images", nargs=-1, type=click.Path(exists=True))
+@click.option("--checkpoint", type=click.Path(exists=True))
+@click.option("--height", type=int)
+@click.option("--output", type=click.Path())
+@click.option("--patch-width", default=84)
+@click.option("--visualize", is_flag=True)
+@click.option("--width", type=int)
+def predict(images, checkpoint, output, width, height, patch_width, visualize):
+    if output is None:
+        logging.fatal('Eval directory required.')
+
+    if checkpoint is None:
+        logging.fatal('Model checkpoint file required.')
+
+    if images is None:
+        logging.fatal('Must provide image globs list.')
+
+    if not os.path.isdir(output):
+        os.makedirs(output)
+
+    image_globs_list = images.split(',')
+
+    use_unlabeled_data = True
+
+    # Input images will be cropped to image_height x image_width.
+    image_size = quality.dataset_creation.image_size_from_glob(image_globs_list[0], patch_width)
+
+    if width is not None and height is not None:
+        image_width = int(patch_width * numpy.floor(width / patch_width))
+
+        image_height = int(patch_width * numpy.floor(height / patch_width))
+
+        if image_width > image_size.width or image_height > image_size.height:
+            raise ValueError('Specified (image_width, image_height) = (%d, %d) exceeds valid dimensions (%d, %d).' % (image_width, image_height, image_size.width, image_size.height))
+    else:
+        image_width = image_size.width
+
+        image_height = image_size.height
+
+    # All patches evaluated in a batch correspond to one single input image.
+    batch_size = int(image_width * image_height / (patch_width ** 2))
+
+    logging.info('Using batch_size=%d for image_width=%d, image_height=%d, model_patch_width=%d', batch_size, image_width, image_height, patch_width)
+
+    tfexamples_tfrecord = quality.inference.build_tfrecord_from_pngs(image_globs_list, use_unlabeled_data, 11, output, 0.0, 1.0, 1, 1, image_width, image_height)
+
+    num_samples = quality.data_provider.get_num_records(tfexamples_tfrecord % quality.inference._SPLIT_NAME)
+
+    logging.info('TFRecord has %g samples.', num_samples)
+
+    graph = tensorflow.Graph()
+
+    with graph.as_default():
+        images, one_hot_labels, image_paths, _ = quality.data_provider.provide_data(
+            batch_size=batch_size,
+            image_height=image_height,
+            image_width=image_width,
+            num_classes=11,
+            num_threads=1,
+            patch_width=patch_width,
+            randomize=False,
+            split_name=quality.inference._SPLIT_NAME,
+            tfrecord_file_pattern=tfexamples_tfrecord
+        )
+
+        model_metrics = quality.evaluation.get_model_and_metrics(
+            images=images,
+            is_training=False,
+            model_id=0,
+            num_classes=11,
+            one_hot_labels=one_hot_labels
+        )
+
+        quality.inference.run_model_inference(
+            aggregation_method=quality.evaluation.METHOD_AVERAGE,
+            image_height=image_height,
+            image_paths=image_paths,
+            image_width=image_width,
+            images=images,
+            labels=model_metrics.labels,
+            model_ckpt_file=checkpoint,
+            num_samples=num_samples,
+            num_shards=1,
+            output_directory=os.path.join(output, 'miq_result_images'),
+            patch_width=patch_width,
+            probabilities=model_metrics.probabilities,
+            shard_num=1,
+            show_plots=visualize
+        )
+
+    # Delete TFRecord to save disk space.
+    tfrecord_path = tfexamples_tfrecord % quality.inference._SPLIT_NAME
+
+    os.remove(tfrecord_path)
+
+    logging.info('Deleted %s', tfrecord_path)
 
 
 @command.command()

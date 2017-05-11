@@ -17,30 +17,11 @@ import numpy
 import skimage.io
 import tensorflow
 
-import data_provider
 import constants
 import dataset_creation
 import evaluation
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
-flags = tensorflow.app.flags
-
-flags.DEFINE_string('eval_directory', None, 'Output directory to save results to.')
-flags.DEFINE_string('model_ckpt_file', None, 'Path to Tensorflow model .ckpt file.')
-flags.DEFINE_string('image_globs_list', None, 'Comma separated list of string globs to images for inference.')
-flags.DEFINE_float('image_brightness_scale', 1.0, 'Multiplicative exposure value.')
-flags.DEFINE_integer('image_width', None, 'Integer, width to crop to. Must be multiple of model_patch_width.')
-flags.DEFINE_integer('image_height', None, 'Integer, height to crop to. Must be multiple of model_patch_width.')
-flags.DEFINE_integer('model_patch_width', 84, 'The image patch width, in pixels, for model input.')
-flags.DEFINE_integer('num_classes', 11, 'Number of model classes')
-flags.DEFINE_boolean('show_plots', False, 'Whether to show plots')
-flags.DEFINE_integer('shard_num', 1, 'Job task number')
-flags.DEFINE_integer('num_shards', 1, 'Total number of job tasks')
-flags.DEFINE_string('probability_aggregation_method', evaluation.METHOD_AVERAGE, 'Method for aggregating probabilities.')
-flags.DEFINE_integer('inference_model_id', 0, 'Model ID.')
-
-FLAGS = flags.FLAGS
 
 _SPLIT_NAME = 'test'
 
@@ -297,98 +278,3 @@ def build_tfrecord_from_pngs(image_globs_list, use_unlabeled_data, num_classes,
     logging.info('Created TFRecord with %g examples.', num_samples_converted)
 
     return os.path.join(eval_directory, tfrecord_file_pattern)
-
-
-def main(_):
-    if FLAGS.eval_directory is None:
-        logging.fatal('Eval directory required.')
-
-    if FLAGS.model_ckpt_file is None:
-        logging.fatal('Model checkpoint file required.')
-
-    if FLAGS.image_globs_list is None:
-        logging.fatal('Must provide image globs list.')
-
-    if not os.path.isdir(FLAGS.eval_directory):
-        os.makedirs(FLAGS.eval_directory)
-
-    image_globs_list = FLAGS.image_globs_list.split(',')
-
-    use_unlabeled_data = True
-
-    # Input images will be cropped to image_height x image_width.
-    image_size = dataset_creation.image_size_from_glob(image_globs_list[0], FLAGS.model_patch_width)
-
-    if FLAGS.image_width is not None and FLAGS.image_height is not None:
-        image_width = int(FLAGS.model_patch_width * numpy.floor(FLAGS.image_width / FLAGS.model_patch_width))
-
-        image_height = int(FLAGS.model_patch_width * numpy.floor(FLAGS.image_height / FLAGS.model_patch_width))
-
-        if image_width > image_size.width or image_height > image_size.height:
-            raise ValueError('Specified (image_width, image_height) = (%d, %d) exceeds valid dimensions (%d, %d).' % (image_width, image_height, image_size.width, image_size.height))
-    else:
-        image_width = image_size.width
-
-        image_height = image_size.height
-
-    # All patches evaluated in a batch correspond to one single input image.
-    batch_size = int(image_width * image_height / (FLAGS.model_patch_width ** 2))
-
-    logging.info('Using batch_size=%d for image_width=%d, image_height=%d, model_patch_width=%d', batch_size, image_width, image_height, FLAGS.model_patch_width)
-
-    tfexamples_tfrecord = build_tfrecord_from_pngs(image_globs_list, use_unlabeled_data, FLAGS.num_classes, FLAGS.eval_directory, FLAGS.image_background_value, FLAGS.image_brightness_scale, FLAGS.shard_num, FLAGS.num_shards, image_width, image_height)
-
-    num_samples = data_provider.get_num_records(tfexamples_tfrecord % _SPLIT_NAME)
-
-    logging.info('TFRecord has %g samples.', num_samples)
-
-    graph = tensorflow.Graph()
-
-    with graph.as_default():
-        images, one_hot_labels, image_paths, _ = data_provider.provide_data(
-            batch_size=batch_size,
-            image_height=image_height,
-            image_width=image_width,
-            num_classes=FLAGS.num_classes,
-            num_threads=1,
-            patch_width=FLAGS.model_patch_width,
-            randomize=False,
-            split_name=_SPLIT_NAME,
-            tfrecord_file_pattern=tfexamples_tfrecord
-        )
-
-        model_metrics = evaluation.get_model_and_metrics(
-            images=images,
-            is_training=False,
-            model_id=FLAGS.inference_model_id,
-            num_classes=FLAGS.num_classes,
-            one_hot_labels=one_hot_labels
-        )
-
-        run_model_inference(
-            aggregation_method=FLAGS.probability_aggregation_method,
-            image_height=image_height,
-            image_paths=image_paths,
-            image_width=image_width,
-            images=images,
-            labels=model_metrics.labels,
-            model_ckpt_file=FLAGS.model_ckpt_file,
-            num_samples=num_samples,
-            num_shards=FLAGS.num_shards,
-            output_directory=os.path.join(FLAGS.eval_directory, 'miq_result_images'),
-            patch_width=FLAGS.model_patch_width,
-            probabilities=model_metrics.probabilities,
-            shard_num=FLAGS.shard_num,
-            show_plots=FLAGS.show_plots
-        )
-
-    # Delete TFRecord to save disk space.
-    tfrecord_path = tfexamples_tfrecord % _SPLIT_NAME
-
-    os.remove(tfrecord_path)
-
-    logging.info('Deleted %s', tfrecord_path)
-
-
-if __name__ == '__main__':
-    tensorflow.app.run()
