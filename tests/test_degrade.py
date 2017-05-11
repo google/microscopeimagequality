@@ -2,6 +2,7 @@ import os
 import tempfile
 
 import numpy
+import skimage.io
 import tensorflow
 
 import quality.dataset_creation
@@ -77,7 +78,7 @@ def test_set_exposure_no_exposure_change():
 def test_apply_poisson_noise():
     image = get_test_image("cell_image.tiff")
 
-    noisy_image = degrader.apply_poisson_noise(image)
+    noisy_image = degrader.random_noise(image)
 
     expected_image = get_test_image("cell_image_poisson_noise_py.png")
 
@@ -129,18 +130,12 @@ def test_get_airy_psf_golden_zero_depth():
     numpy.testing.assert_almost_equal(expected_psf, psf, 2)
 
 
-def test_write_png_runs():
-    psf = get_test_image("psf.png")
-
-    quality.degrade.write_png(psf, os.path.join(test_dir, "psf.png"))
-
-
 def test_read_write_png():
     image = get_test_image("cell_image.tiff")
 
     output_path = os.path.join(test_dir, "cell_image2.png")
 
-    quality.degrade.write_png(image, output_path)
+    skimage.io.imsave(output_path, image)
 
     image2 = quality.dataset_creation.read_16_bit_greyscale(output_path)
 
