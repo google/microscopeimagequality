@@ -3,7 +3,6 @@ import tempfile
 import unittest
 
 import numpy
-import tensorflow
 
 import quality.dataset_creation
 
