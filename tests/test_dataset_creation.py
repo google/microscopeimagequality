@@ -158,7 +158,3 @@ class DatasetCreationTest(unittest.TestCase):
 
         self.assertEquals(dataset.labels.shape, (num_images_expected, num_classes))
         self.assertEquals(num_images_expected, len(dataset.image_paths))
-
-
-if __name__ == '__main__':
-    unittest.main()
