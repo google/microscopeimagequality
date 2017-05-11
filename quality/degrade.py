@@ -30,8 +30,11 @@ Example usage:
 import os
 
 import numpy
+import past.builtins
 import png
+import scipy.integrate
 import scipy.signal
+import scipy.special
 
 import dataset_creation
 
@@ -157,8 +160,8 @@ def get_airy_psf(psf_width_pixels,
 
     meters_per_pixel = psf_width_meters / psf_width_pixels
     psf = numpy.zeros((psf_width_pixels, psf_width_pixels), dtype=numpy.float64)
-    for i in xrange(psf_width_pixels):
-        for j in xrange(psf_width_pixels):
+    for i in past.builtins.xrange(psf_width_pixels):
+        for j in past.builtins.xrange(psf_width_pixels):
             x = (i - (psf_width_pixels - 1.0) / 2.0) * meters_per_pixel
             y = (j - (psf_width_pixels - 1.0) / 2.0) * meters_per_pixel
             psf[i, j] = _evaluate_airy_function_at_point(
@@ -186,13 +189,13 @@ def _evaluate_airy_function_at_point(x, y, z, wavelength, numerical_aperture,
     A real float, the value of the Airy point spread function at the coordinate.
   """
     k = 2 * numpy.pi / wavelength
-    NA = numerical_aperture  # pylint: disable=invalid-name
+    na = numerical_aperture  # pylint: disable=invalid-name
     n = refractive_index
 
     def function_to_integrate(rho):
-        bessel_arg = k * NA / n * numpy.sqrt(numpy.power(x, 2) + numpy.power(y, 2)) * rho
+        bessel_arg = k * na / n * numpy.sqrt(numpy.power(x, 2) + numpy.power(y, 2)) * rho
         return scipy.special.j0(bessel_arg) * numpy.exp(-1.0 / 2.0 * 1j * k * numpy.power(
-            rho, 2) * z * numpy.power(NA / n, 2)) * rho
+            rho, 2) * z * numpy.power(na / n, 2)) * rho
 
     integral_result = _integrate_numerical(function_to_integrate, 0.0, 1.0)
     return float(numpy.real(integral_result * numpy.conj(integral_result)))

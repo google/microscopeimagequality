@@ -439,7 +439,7 @@ def get_images_from_glob(pathnames, max_images):
     """Gets PNG and TIF image paths specified by the glob.
 
   Args:
-    glob: String, glob for input images.
+    pathnames: String, glob for input images.
     max_images: Integer, max number of images paths to return. Useful for
       restricting the dataset for testing.
 

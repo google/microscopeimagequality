@@ -33,6 +33,7 @@ import collections
 import csv
 import logging
 import os
+import six
 
 import PIL.Image
 import PIL.ImageDraw
@@ -283,8 +284,8 @@ def get_certainty(probabilities):
 
     else:
         certainty_proxy = 0.0
-    assert certainty_proxy - 1 < 1e-6, ('certainty: ' ' %g') % certainty_proxy
-    assert certainty_proxy > -1e-6, ('certainty:' ' %g') % certainty_proxy
+    assert certainty_proxy - 1 < 1e-6, 'certainty: ' ' %g' % certainty_proxy
+    assert certainty_proxy > -1e-6, 'certainty:' ' %g' % certainty_proxy
     certainty_proxy = numpy.clip(certainty_proxy, 0.0, 1.0)
     return certainty_proxy
 
@@ -395,9 +396,10 @@ def aggregate_prediction_from_probabilities(probabilities,
   """
     certainties = certainties_from_probabilities(probabilities)
 
-    certainty_dict = {}
-    certainty_dict['mean'] = numpy.round(numpy.mean(certainties), 3)
-    certainty_dict['max'] = numpy.round(numpy.max(certainties), 3)
+    certainty_dict = {
+        'mean': numpy.round(numpy.mean(certainties), 3),
+        'max': numpy.round(numpy.max(certainties), 3)
+    }
 
     weights = certainties
     weights = None if numpy.sum(weights) == 0 else weights
@@ -718,7 +720,7 @@ def load_inference_results(directory_csvs):
     num_entries_total = 0
     for path in paths:
         with open(path, 'r') as csvfile:
-            num_entries = sum(1 for line in csvfile) - 1
+            num_entries = sum(1 for _ in csvfile) - 1
             logging.info('%g entries found at %s.', num_entries, path)
             num_entries_total += num_entries
     logging.info('%g entries total.', num_entries_total)
@@ -922,7 +924,7 @@ def main(_):
                 tensorflow.contrib.metrics.streaming_accuracy(aggregated_prediction, aggregated_label),
         })
 
-        for name, value in names_to_values.iteritems():
+        for name, value in six.iteritems(names_to_values):
             tensorflow.summary.scalar(name, value)
 
         tensorflow.summary.histogram(FLAGS.eval_type + ' images', images)

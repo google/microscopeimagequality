@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """Check that images specified by glob are valid for image quality inference.
 
 Example usage:
@@ -97,7 +99,7 @@ def check_image_dimensions(image_paths, image_height, image_width):
 def main(_):
     image_paths = []
     for glob in FLAGS.image_globs_list.split(','):
-        print glob
+        print(glob)
         image_paths += dataset_creation.get_images_from_glob(
             glob, _MAX_IMAGES_TO_VALIDATE)
     logging.info('Found %d paths', len(image_paths))

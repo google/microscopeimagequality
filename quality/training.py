@@ -105,7 +105,6 @@ def main(_):
 
     g = tensorflow.Graph()
     with g.as_default():
-
         # If ps_tasks is zero, the local device is used. When using multiple
         # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
         # across the different devices.
@@ -121,7 +120,6 @@ def main(_):
 
             # Visualize the input
             tensorflow.summary.image('train_input', images)
-            labels = tensorflow.argmax(one_hot_labels, 1)
             # slim.summaries.add_histogram_summaries([images, labels])
 
 
