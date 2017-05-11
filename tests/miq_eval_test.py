@@ -14,16 +14,15 @@
 # limitations under the License.
 
 import os
+import tempfile
+import unittest
 
 import numpy as np
+import tensorflow as tf
+import  tensorflow.contrib.slim as slim
 from PIL import Image
 
-import tempfile
-import  tensorflow.contrib.slim as slim
-import tensorflow as tf
-
-import unittest
-from quality import miq_eval
+from quality.quality import miq_eval
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -33,7 +32,7 @@ class MiqEvalTest(tf.test.TestCase):
   def setUp(self):
     self.batch_size = 4
     self.test_data_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
-,"testdata")
+,"data")
     self.test_dir = tempfile.mkdtemp()    
     self.patch_width = 28
     self.image_shape = (int(np.sqrt(self.batch_size) * self.patch_width),

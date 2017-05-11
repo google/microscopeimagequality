@@ -19,16 +19,12 @@ extracted and converted to batched tensors, ready for training or inference.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 
-import numpy as np
-
-from tensorflow.contrib.slim import dataset
-from tensorflow.contrib.slim import dataset_data_provider
-from tensorflow.contrib.slim import tfexample_decoder
-import tensorflow as tf
-
-import logging
+import numpy
+import tensorflow
+import tensorflow.contrib.slim
 
 IMAGE_WIDTH = 520
 IMAGE_HEIGHT = 520
@@ -106,31 +102,31 @@ def get_split(split_name, tfrecord_file_pattern, num_classes, image_width,
   image_shape = (image_height, image_width, 1)
   keys_to_features = {
       FEATURE_IMAGE:
-          tf.FixedLenFeature(
-              image_shape, tf.float32, default_value=tf.zeros(image_shape)),
+          tensorflow.FixedLenFeature(
+              image_shape, tensorflow.float32, default_value=tensorflow.zeros(image_shape)),
       FEATURE_IMAGE_CLASS:
-          tf.FixedLenFeature(
-              [num_classes], tf.float32, default_value=tf.zeros([num_classes])),
+          tensorflow.FixedLenFeature(
+              [num_classes], tensorflow.float32, default_value=tensorflow.zeros([num_classes])),
       FEATURE_IMAGE_PATH:
-          tf.FixedLenFeature(
-              [1], tf.string, default_value=''),
+          tensorflow.FixedLenFeature(
+              [1], tensorflow.string, default_value=''),
   }
 
   items_to_handlers = {
-      FEATURE_IMAGE: tfexample_decoder.Tensor(FEATURE_IMAGE),
-      FEATURE_IMAGE_CLASS: tfexample_decoder.Tensor(FEATURE_IMAGE_CLASS),
-      FEATURE_IMAGE_PATH: tfexample_decoder.Tensor(FEATURE_IMAGE_PATH),
+      FEATURE_IMAGE: tensorflow.contrib.slim.tfexample_decoder.Tensor(FEATURE_IMAGE),
+      FEATURE_IMAGE_CLASS: tensorflow.contrib.slim.tfexample_decoder.Tensor(FEATURE_IMAGE_CLASS),
+      FEATURE_IMAGE_PATH: tensorflow.contrib.slim.tfexample_decoder.Tensor(FEATURE_IMAGE_PATH),
   }
 
-  decoder = tfexample_decoder.TFExampleDecoder(keys_to_features,
-                                               items_to_handlers)
+  decoder = tensorflow.contrib.slim.tfexample_decoder.TFExampleDecoder(keys_to_features,
+                                                                       items_to_handlers)
 
   file_pattern = tfrecord_file_pattern % split_name
 
   num_samples = get_num_records(file_pattern)
-  return dataset.Dataset(
+  return tensorflow.contrib.slim.dataset.Dataset(
       data_sources=file_pattern,
-      reader=tf.TFRecordReader,
+      reader=tensorflow.TFRecordReader,
       decoder=decoder,
       num_samples=num_samples,
       num_classes=num_classes,
@@ -153,7 +149,7 @@ def get_batches(image, label, image_path, num_threads=800, batch_size=32):
     [batch_size x 1]) tensors.
   """
   assert len(image.get_shape().as_list()) == 4
-  batch_images, batch_one_hot_labels, batch_image_paths = tf.train.batch(
+  batch_images, batch_one_hot_labels, batch_image_paths = tensorflow.train.batch(
       [image, label, image_path],
       batch_size=batch_size,
       num_threads=num_threads,
@@ -176,31 +172,31 @@ def get_image_patch_tensor(image, label, image_path, patch_width):
     [1 x 1].
   """
   assert len(image.get_shape().as_list()) == 3, image.get_shape().as_list()
-  size = tf.constant([patch_width, patch_width, 1], dtype=tf.int32)
+  size = tensorflow.constant([patch_width, patch_width, 1], dtype=tensorflow.int32)
 
-  patch = tf.expand_dims(tf.random_crop(image, size), 0)
+  patch = tensorflow.expand_dims(tensorflow.random_crop(image, size), 0)
 
-  expanded_label = tf.expand_dims(label, dim=0)
-  expanded_image_path = tf.expand_dims(image_path, dim=0)
+  expanded_label = tensorflow.expand_dims(label, dim=0)
+  expanded_image_path = tensorflow.expand_dims(image_path, dim=0)
   return patch, expanded_label, expanded_image_path
 
 
 def apply_random_offset(patch, min_offset, max_offset):
   """Adds a random offset to input image (tensor)."""
   # Choose offset uniformly in log space.
-  offset = tf.pow(
-      tf.constant([10.0]),
-      tf.random_uniform([1], np.log10(min_offset), np.log10(max_offset)))
-  return tf.add(patch, offset)
+  offset = tensorflow.pow(
+      tensorflow.constant([10.0]),
+      tensorflow.random_uniform([1], numpy.log10(min_offset), numpy.log10(max_offset)))
+  return tensorflow.add(patch, offset)
 
 
 def apply_random_brightness_adjust(patch, min_factor, max_factor):
   """Scales the input image (tensor) brightness by a random factor."""
   # Choose brightness scale uniformly in log space.
-  brightness = tf.pow(
-      tf.constant([10.0]),
-      tf.random_uniform([1], np.log10(min_factor), np.log10(max_factor)))
-  return tf.multiply(patch, brightness)
+  brightness = tensorflow.pow(
+      tensorflow.constant([10.0]),
+      tensorflow.random_uniform([1], numpy.log10(min_factor), numpy.log10(max_factor)))
+  return tensorflow.multiply(patch, brightness)
 
 
 def get_image_tiles_tensor(image, label, image_path, patch_width):
@@ -216,14 +212,14 @@ def get_image_tiles_tensor(image, label, image_path, patch_width):
     Tensors tiles, size [num_tiles x patch_width x patch_width x 1], labels,
     size [num_tiles x num_classes], and image_paths, size [num_tiles x 1].
   """
-  tiles_before_reshape = tf.extract_image_patches(
-      tf.expand_dims(image, dim=0), [1, patch_width, patch_width, 1],
+  tiles_before_reshape = tensorflow.extract_image_patches(
+      tensorflow.expand_dims(image, dim=0), [1, patch_width, patch_width, 1],
       [1, patch_width, patch_width, 1], [1, 1, 1, 1], 'VALID')
-  tiles = tf.reshape(tiles_before_reshape, [-1, patch_width, patch_width, 1])
+  tiles = tensorflow.reshape(tiles_before_reshape, [-1, patch_width, patch_width, 1])
 
-  labels = tf.tile(tf.expand_dims(label, dim=0), [tf.shape(tiles)[0], 1])
-  image_paths = tf.tile(
-      tf.expand_dims(image_path, dim=0), [tf.shape(tiles)[0], 1])
+  labels = tensorflow.tile(tensorflow.expand_dims(label, dim=0), [tensorflow.shape(tiles)[0], 1])
+  image_paths = tensorflow.tile(
+      tensorflow.expand_dims(image_path, dim=0), [tensorflow.shape(tiles)[0], 1])
 
   return tiles, labels, image_paths
 
@@ -273,7 +269,7 @@ def provide_data(tfrecord_file_pattern,
       num_classes,
       image_width=image_width,
       image_height=image_height)
-  provider = dataset_data_provider.DatasetDataProvider(
+  provider = tensorflow.contrib.slim.dataset_data_provider.DatasetDataProvider(
       dataset_info,
       common_queue_capacity=2 * batch_size,
       common_queue_min=batch_size,

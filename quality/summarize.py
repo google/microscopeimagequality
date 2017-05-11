@@ -22,24 +22,24 @@ Example usage:
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import numpy as np
-from PIL import Image
-
-import tensorflow as tf
-
 import logging
+import os
 import sys
+
+import PIL
+import matplotlib
+import matplotlib.pyplot
+import numpy
+import tensorflow
+
+import constants
+import evaluation
+
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-from quality import constants
-from quality import miq_eval
+matplotlib.use('Agg')
 
-flags = tf.app.flags
+flags = tensorflow.app.flags
 
 flags.DEFINE_string('experiment_directory', None,
                     'Directory of inference .csv and .png outputs')
@@ -80,22 +80,22 @@ def _plot_histogram(values, xlabel, ylabel, save_path, bins=10):
   Raises:
     ValueError: If input values are out of range.
   """
-  if np.min(values) < 0.0 or np.max(values) > 1.0:
+  if numpy.min(values) < 0.0 or numpy.max(values) > 1.0:
     raise ValueError('Input values out of range.')
-  plt.figure()
-  _, _, patches = plt.hist(values, bins=bins, range=(0.0, 1.0), color='gray')
+  matplotlib.pyplot.figure()
+  _, _, patches = matplotlib.pyplot.hist(values, bins=bins, range=(0.0, 1.0), color='gray')
 
-  alpha_index = np.array(range(1, bins)).astype(np.float32) / (bins - 1)
+  alpha_index = numpy.array(range(1, bins)).astype(numpy.float32) / (bins - 1)
   for a, p in zip(alpha_index, patches):
-    plt.setp(p, 'alpha', a)
+    matplotlib.pyplot.setp(p, 'alpha', a)
 
-  plt.xlim(0.0, 1.0)
+  matplotlib.pyplot.xlim(0.0, 1.0)
 
-  plt.tick_params(bottom=False, left=False, top=False, right=False)
-  plt.xlabel(xlabel)
-  plt.ylabel(ylabel)
-  plt.grid('off')
-  plt.savefig(save_path, bbox_inches='tight')
+  matplotlib.pyplot.tick_params(bottom=False, left=False, top=False, right=False)
+  matplotlib.pyplot.xlabel(xlabel)
+  matplotlib.pyplot.ylabel(ylabel)
+  matplotlib.pyplot.grid('off')
+  matplotlib.pyplot.savefig(save_path, bbox_inches='tight')
 
 
 def _make_scatter_subplot(num_classes, predictions, certainties1, certainties2,
@@ -112,31 +112,31 @@ def _make_scatter_subplot(num_classes, predictions, certainties1, certainties2,
   """
   for c in range(num_classes):
     mask = predictions == c
-    if np.any(mask):
-      color = plt.cm.hsv(float(c) / num_classes)
-      alpha = _get_alpha(np.sum(mask))
-      logging.info('class %d, alpha %g counts %d', c, alpha, np.sum(mask))
+    if numpy.any(mask):
+      color = matplotlib.pyplot.cm.hsv(float(c) / num_classes)
+      alpha = _get_alpha(numpy.sum(mask))
+      logging.info('class %d, alpha %g counts %d', c, alpha, numpy.sum(mask))
       plot_scatter(
-          np.array(certainties1)[mask],
-          np.array(certainties2)[mask], label1, label2, color, alpha)
+          numpy.array(certainties1)[mask],
+          numpy.array(certainties2)[mask], label1, label2, color, alpha)
 
 
 def plot_scatter(x, y, xlabel, ylabel, color, alpha):
   """Plot scatter plot."""
-  plt.scatter(x, y, alpha=alpha, s=2.5, c=color, linewidths=0)
+  matplotlib.pyplot.scatter(x, y, alpha=alpha, s=2.5, c=color, linewidths=0)
 
-  plt.grid('off')
-  plt.tick_params(
+  matplotlib.pyplot.grid('off')
+  matplotlib.pyplot.tick_params(
       labelbottom=False,
       labelleft=False,
       bottom=False,
       left=False,
       top=False,
       right=False)
-  plt.ylim([0.0, 1.0])
-  plt.xlim([0.0, 1.0])
-  plt.xlabel(xlabel)
-  plt.ylabel(ylabel)
+  matplotlib.pyplot.ylim([0.0, 1.0])
+  matplotlib.pyplot.xlim([0.0, 1.0])
+  matplotlib.pyplot.xlabel(xlabel)
+  matplotlib.pyplot.ylabel(ylabel)
 
 
 def _get_alpha(count):
@@ -170,20 +170,20 @@ def plot_certainties(certainties, predictions, num_classes, save_path):
   keys = sorted(certainties.keys())
   num_keys = len(keys)
   fig_width = int(2.5 * len(certainties.keys()))
-  plt.figure(figsize=(fig_width, fig_width))
+  matplotlib.pyplot.figure(figsize=(fig_width, fig_width))
   for i, k1 in enumerate(keys):
     for j, k2 in enumerate(keys):
       if i > j:
-        plt.subplot(num_keys, num_keys, 1 + i * num_keys + j)
+        matplotlib.pyplot.subplot(num_keys, num_keys, 1 + i * num_keys + j)
         _make_scatter_subplot(num_classes, predictions, certainties[k2],
                               certainties[k1], k2
                               if i == num_keys - 1 else '', k1
                               if j == 0 else '')
     logging.info('Certainty %s has min %g, mean %g, max %g.', k1,
-                 np.min(certainties[k1]),
-                 np.mean(certainties[k1]), np.max(certainties[k1]))
-  plt.subplots_adjust(hspace=0.05, wspace=0.05)
-  plt.savefig(save_path, bbox_inches='tight', dpi=600)
+                 numpy.min(certainties[k1]),
+                 numpy.mean(certainties[k1]), numpy.max(certainties[k1]))
+  matplotlib.pyplot.subplots_adjust(hspace=0.05, wspace=0.05)
+  matplotlib.pyplot.savefig(save_path, bbox_inches='tight', dpi=600)
 
 
 def _read_valid_part_of_annotated_image(experiment_path, orig_name):
@@ -214,17 +214,17 @@ def _read_valid_part_of_annotated_image(experiment_path, orig_name):
     raise ValueError('File %s not found' % orig_name)
   annotated_filename = all_files[filename_index]
 
-  image = np.array(
-      Image.open(os.path.join(experiment_path, annotated_filename)))
+  image = numpy.array(
+      PIL.Image.open(os.path.join(experiment_path, annotated_filename)))
   mask_path = os.path.join(experiment_path,
                            constants.VALID_MASK_FORMAT % orig_name + '.png')
   if not os.path.isdir(mask_path):
     logging.info('No mask found at %s', mask_path)
   else:
-    mask = np.array(Image.open(mask_path))
+    mask = numpy.array(PIL.Image.open(mask_path))
     # Get the upper-left crop that is valid (where mask > 0).
-    max_valid_row = np.argwhere(np.sum(mask, 1))[-1]
-    max_valid_column = np.argwhere(np.sum(mask, 0))[-1]
+    max_valid_row = numpy.argwhere(numpy.sum(mask, 1))[-1]
+    max_valid_column = numpy.argwhere(numpy.sum(mask, 0))[-1]
     image = image[:max_valid_row, :max_valid_column]
 
   return image
@@ -241,24 +241,24 @@ def _save_color_legend(num_classes, path):
     path: Path to png file to save the figure.
   """
 
-  probabilities = np.identity(num_classes, dtype=np.float32)
-  probabilities = np.tile(probabilities, [num_classes, 1])
-  patch_width = miq_eval.BORDER_SIZE / 2
-  patches = np.zeros(
-      (num_classes**2, patch_width, patch_width, 1), dtype=np.float32)
+  probabilities = numpy.identity(num_classes, dtype=numpy.float32)
+  probabilities = numpy.tile(probabilities, [num_classes, 1])
+  patch_width = evaluation.BORDER_SIZE / 2
+  patches = numpy.zeros(
+      (num_classes**2, patch_width, patch_width, 1), dtype=numpy.float32)
   # Make up some dummy labels.
   labels = [0] * num_classes**2
   image_shape = (num_classes * patch_width, num_classes * patch_width)
 
-  image = miq_eval.get_rgb_image(1.0, patches, probabilities, labels,
-                                 image_shape)
-  image = image[miq_eval.BORDER_SIZE:miq_eval.BORDER_SIZE + patch_width, :]
-  plt.figure()
-  plt.imshow(image, interpolation='nearest')
-  plt.grid('off')
-  plt.axis('off')
-  plt.savefig(path, bbox_inches='tight')
-  plt.close()
+  image = evaluation.get_rgb_image(1.0, patches, probabilities, labels,
+                                   image_shape)
+  image = image[evaluation.BORDER_SIZE:evaluation.BORDER_SIZE + patch_width, :]
+  matplotlib.pyplot.figure()
+  matplotlib.pyplot.imshow(image, interpolation='nearest')
+  matplotlib.pyplot.grid('off')
+  matplotlib.pyplot.axis('off')
+  matplotlib.pyplot.savefig(path, bbox_inches='tight')
+  matplotlib.pyplot.close()
 
 
 def save_histograms_scatter_plots_and_csv(probabilities,
@@ -285,16 +285,16 @@ def save_histograms_scatter_plots_and_csv(probabilities,
     output_path_all_plots = output_path
 
   logging.info('Saving inference results in single .csv file.')
-  miq_eval.save_inference_results(probabilities, labels, certainties,
-                                  orig_names, predictions,
-                                  os.path.join(output_path, 'results_all.csv'))
+  evaluation.save_inference_results(probabilities, labels, certainties,
+                                    orig_names, predictions,
+                                    os.path.join(output_path, 'results_all.csv'))
 
   logging.info('Generating simple result plot.')
-  save_confusion = not np.any(np.array(labels) < 0)
-  miq_eval.save_result_plots(probabilities, labels, save_confusion,
-                             output_path_all_plots)
+  save_confusion = not numpy.any(numpy.array(labels) < 0)
+  evaluation.save_result_plots(probabilities, labels, save_confusion,
+                               output_path_all_plots)
 
-  predictions = np.array(predictions)
+  predictions = numpy.array(predictions)
   num_classes = probabilities.shape[1]
 
   _save_color_legend(num_classes, os.path.join(output_path, 'color_legend.png'))
@@ -309,16 +309,16 @@ def save_histograms_scatter_plots_and_csv(probabilities,
 
   # Generate and save histograms for predictions and certainties.
 
-  miq_eval.save_prediction_histogram(
+  evaluation.save_prediction_histogram(
       predictions,
       os.path.join(output_path, 'histogram_predictions.jpg'), num_classes)
-  miq_eval.save_prediction_histogram(
+  evaluation.save_prediction_histogram(
       predictions,
       os.path.join(output_path, 'histogram_predictions_log.jpg'),
       num_classes,
       log=True)
 
-  for kind in miq_eval.CERTAINTY_TYPES.values():
+  for kind in evaluation.CERTAINTY_TYPES.values():
     if kind == 'aggregate':
       path = output_path
     else:
@@ -333,15 +333,15 @@ def save_histograms_scatter_plots_and_csv(probabilities,
 def _adjust_image_annotation(image, label_intensity):
   """Adjusts the annotation at the bottom of the image."""
   # Change the intensity of the bottom border.
-  image[-1 * miq_eval.BORDER_SIZE:, :, :] = (
-      image[-1 * miq_eval.BORDER_SIZE:, :, :].astype(np.float32) *
-      label_intensity).astype(image.dtype)
+  image[-1 * evaluation.BORDER_SIZE:, :, :] = (
+    image[-1 * evaluation.BORDER_SIZE:, :, :].astype(numpy.float32) *
+    label_intensity).astype(image.dtype)
 
   # Make bottom border larger.
-  border_size = max(miq_eval.BORDER_SIZE,
+  border_size = max(evaluation.BORDER_SIZE,
                     int(_BORDER_FRACTION * image.shape[0]))
-  image[-1 * border_size:, :, :] = np.tile(image[-1:, :, :], (border_size, 1,
-                                                              1))
+  image[-1 * border_size:, :, :] = numpy.tile(image[-1:, :, :], (border_size, 1,
+                                                                 1))
   return image
 
 
@@ -364,10 +364,10 @@ def _rank_examples(indices, rank_method, certainties, predictions,
     ValueError: If the certainty rank method is invalid.
   """
   if rank_method == 'random':
-    np.random.shuffle(indices)
+    numpy.random.shuffle(indices)
   elif 'certainty' in rank_method:
-    class_certainties = np.array(certainties)[predictions == predicted_class]
-    indices = indices[np.argsort(class_certainties)]
+    class_certainties = numpy.array(certainties)[predictions == predicted_class]
+    indices = indices[numpy.argsort(class_certainties)]
     if 'certainty_most' in rank_method:
       indices = indices[::-1]
     elif 'certainty_least_to_most' in rank_method:
@@ -405,7 +405,7 @@ def save_summary_montages(probabilities,
   if output_path_all_plots is None:
     output_path_all_plots = output_path
 
-  predictions = np.array(predictions)
+  predictions = numpy.array(predictions)
   num_samples, num_classes = probabilities.shape
 
   with open(
@@ -424,36 +424,36 @@ def save_summary_montages(probabilities,
 
       image = _adjust_image_annotation(image, label_intensity)
 
-      plt.imshow(image)
-      plt.tick_params(labelbottom=False, labelleft=False)
-      plt.grid('off')
-      plt.axis('off')
+      matplotlib.pyplot.imshow(image)
+      matplotlib.pyplot.tick_params(labelbottom=False, labelleft=False)
+      matplotlib.pyplot.grid('off')
+      matplotlib.pyplot.axis('off')
 
     def subplot(nrows, ncols, num):
       """Makes a subplot and logs the (row, column) with 0-indexing."""
-      plt.subplot(nrows, ncols, num)
+      matplotlib.pyplot.subplot(nrows, ncols, num)
       f.write('%d, %d ' % ((num - 1) / ncols, (num - 1) % ncols))
 
     def savefig(path):
       """Saves figure and logs the path."""
-      plt.subplots_adjust(hspace=0.01, wspace=0.01)
-      plt.savefig(path, bbox_inches='tight')
-      plt.close()
+      matplotlib.pyplot.subplots_adjust(hspace=0.01, wspace=0.01)
+      matplotlib.pyplot.savefig(path, bbox_inches='tight')
+      matplotlib.pyplot.close()
       f.write('%s\n\n' % path)
 
     def setup_new_montage_figure(nrows, ncols):
       """New figure with blank subplot at corners to fix figure shape."""
-      plt.figure(figsize=(_FIG_WIDTH, _FIG_WIDTH))
-      plt.subplot(nrows, ncols, 1)
-      plt.axis('off')
-      plt.subplot(nrows, ncols, nrows * ncols)
-      plt.axis('off')
+      matplotlib.pyplot.figure(figsize=(_FIG_WIDTH, _FIG_WIDTH))
+      matplotlib.pyplot.subplot(nrows, ncols, 1)
+      matplotlib.pyplot.axis('off')
+      matplotlib.pyplot.subplot(nrows, ncols, nrows * ncols)
+      matplotlib.pyplot.axis('off')
 
     def montage_by_class_rank(rank_method, certainties, num_per_class=10):
       """Montage select images per class ranked by a particular method."""
       setup_new_montage_figure(num_classes, num_per_class)
       for i in range(num_classes):
-        class_indices = np.array(range(num_samples))[predictions == i]
+        class_indices = numpy.array(range(num_samples))[predictions == i]
         num_plots_in_row = min(class_indices.shape[0], num_per_class)
         if num_plots_in_row == 0:
           continue
@@ -466,18 +466,18 @@ def save_summary_montages(probabilities,
 
     def montage_by_class_bin(rank_method, certainties, bins_per_class=10):
       """Montage one image per certainty bin for each class."""
-      boundaries = np.linspace(0.0, 1.0, bins_per_class + 1)
+      boundaries = numpy.linspace(0.0, 1.0, bins_per_class + 1)
       setup_new_montage_figure(num_classes, bins_per_class)
       for i in range(num_classes):
         for j in range(bins_per_class):
           mask = (predictions == i) & (certainties >= boundaries[j]) & (
               certainties < boundaries[j + 1])
-          bin_indices = np.array(range(num_samples))[mask]
-          bin_certainties = np.array(certainties)[mask]
+          bin_indices = numpy.array(range(num_samples))[mask]
+          bin_certainties = numpy.array(certainties)[mask]
           if bin_indices.shape[0] == 0:
             continue
           # Use the approximate median value in the bin.
-          bin_indices = bin_indices[np.argsort(bin_certainties)]
+          bin_indices = bin_indices[numpy.argsort(bin_certainties)]
           index = bin_indices[len(bin_indices) / 2]
           subplot(num_classes, bins_per_class, 1 + i * bins_per_class + j)
           plot_image(index, certainties[index])
@@ -504,14 +504,14 @@ def save_summary_montages(probabilities,
       savefig(os.path.join(output_path_all_plots, '%s.jpg' % name))
 
     def plot_most_least_certain(certainties, kind):
-      indices = np.argsort(certainties)
+      indices = numpy.argsort(certainties)
       width = min(len(certainties), 8)
       montage_first_several(width, indices, 'least_%s_certainty' % kind)
       montage_first_several(width, indices[::-1], 'most_%s_certainty' % kind)
 
     # Now actually generate the montages.
     montage_by_class_rank('random', certainties['mean'])
-    for certainty in miq_eval.CERTAINTY_TYPES.values():
+    for certainty in evaluation.CERTAINTY_TYPES.values():
       logging.info('Generating montages for certainty type: %s.', certainty)
       montage_by_certainty(certainties[certainty], certainty)
       plot_most_least_certain(certainties[certainty], certainty)
@@ -524,7 +524,7 @@ def main(_):
     logging.fatal('Experiment directory required.')
 
   (probabilities, labels, certainties, orig_names,
-   predictions) = miq_eval.load_inference_results(FLAGS.experiment_directory)
+   predictions) = evaluation.load_inference_results(FLAGS.experiment_directory)
 
   if not predictions:
     logging.fatal('No inference output found at %s.',
@@ -552,4 +552,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tensorflow.app.run()

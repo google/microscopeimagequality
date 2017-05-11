@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import tensorflow.contrib.slim as slim
-import tensorflow as tf
-
 import unittest
 
-from quality import miq
+import tensorflow as tf
+import tensorflow.contrib.slim as slim
+
+from quality.quality import miq
 
 FLAGS = tf.app.flags.FLAGS
 

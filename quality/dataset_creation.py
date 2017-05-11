@@ -15,19 +15,16 @@
 # limitations under the License.
 
 import collections
+import logging
 import os
 
-import glob as glob_lib
+import PIL
+import numpy
+import skimage.external.tifffile
+import tensorflow
+import tensorflow.core.example
 
-import numpy as np
-from PIL import Image
-import skimage.external.tifffile as tiff
-
-import tensorflow as tf
-import logging
-from tensorflow.core.example import example_pb2
-
-from quality import data_provider
+import data_provider
 
 # Threshold for foreground objects (after background subtraction).
 _FOREGROUND_THRESHOLD = 100.0 / 65535
@@ -80,9 +77,9 @@ class Dataset(object):
 
   def randomize(self):
     """Randomize the ordering of images and labels."""
-    ordering = np.random.permutation(range(self.num_examples))
+    ordering = numpy.random.permutation(range(self.num_examples))
     self.labels = self.labels[ordering, :]
-    self.image_paths = list(np.array(self.image_paths)[ordering])
+    self.image_paths = list(numpy.array(self.image_paths)[ordering])
 
   def subsample_for_shard(self, shard_num, num_shards):
     """Subsample the data based on the shard."""
@@ -120,16 +117,16 @@ class Dataset(object):
                                    normalize)
 
     assert len(image.shape) == 2
-    assert image.dtype == np.float32
+    assert image.dtype == numpy.float32
     assert image.shape[0] == self.image_height
     assert image.shape[1] == self.image_width
 
     # Check that image pixel values are valid.
-    if np.any(np.isnan(image)):
+    if numpy.any(numpy.isnan(image)):
       raise ValueError('NaNs found in image from %s' % image_path)
-    if np.min(image) < 0.0 or np.max(image) > 1.0:
+    if numpy.min(image) < 0.0 or numpy.max(image) > 1.0:
       raise ValueError('Image values exceed range [0,1.0]: [%g,%g]' %
-                       (np.min(image), np.max(image)))
+                       (numpy.min(image), numpy.max(image)))
 
     return image, label, image_path
 
@@ -236,7 +233,7 @@ def convert_to_examples(dataset,
   output_path = os.path.join(output_directory, output_tfrecord_filename)
 
   # Write the actual TFRecord.
-  with tf.python_io.TFRecordWriter(output_path) as writer:
+  with tensorflow.python_io.TFRecordWriter(output_path) as writer:
     for index in range(dataset.num_examples):
       image, label, image_path = dataset.get_sample(index, normalize)
       example = generate_tf_example(image, label, image_path)
@@ -296,7 +293,7 @@ def get_preprocessed_image(path,
     raise ValueError('Image is too small')
 
   # Background subtraction
-  image_without_background = np.clip((
+  image_without_background = numpy.clip((
       (image - image_background_value) * image_brightness_scale), 0.0, 1.0)
 
   cropped_image = image_without_background[0:image_height, 0:image_width]
@@ -314,11 +311,11 @@ def get_preprocessed_image(path,
 
 def normalize_image(image):
   foreground_mask = image > _FOREGROUND_THRESHOLD
-  image_has_foreground = (np.sum(foreground_mask) > _FOREGROUND_AREA_THRESHOLD *
+  image_has_foreground = (numpy.sum(foreground_mask) > _FOREGROUND_AREA_THRESHOLD *
                           foreground_mask.shape[0] * foreground_mask.shape[1])
   if image_has_foreground:
-    foreground_mean = np.sum(image[foreground_mask]) / np.sum(foreground_mask)
-    return np.clip(image / foreground_mean * _FOREGROUND_MEAN, 0.0, 1.0)
+    foreground_mean = numpy.sum(image[foreground_mask]) / numpy.sum(foreground_mask)
+    return numpy.clip(image / foreground_mean * _FOREGROUND_MEAN, 0.0, 1.0)
   return image
 
 
@@ -334,10 +331,10 @@ def generate_tf_example(image, label, image_path):
   Returns:
     TensorFlow Example.
   """
-  example = example_pb2.Example()
+  example = tensorflow.core.example.example_pb2.Example()
   features = example.features
 
-  image_expanded = np.expand_dims(image, axis=2)
+  image_expanded = numpy.expand_dims(image, axis=2)
   features.feature[data_provider.FEATURE_IMAGE].float_list.value.extend(
       (image_expanded.flatten().tolist()))
 
@@ -363,19 +360,19 @@ def read_16_bit_greyscale(path):
   file_extension = os.path.splitext(path)[1]
   assert (file_extension in _SUPPORTED_EXTENSIONS), 'path is %s' % path
   if file_extension == '.png':
-    img = Image.open(path, 'r')
+    img = PIL.Image.open(path, 'r')
     assert img.mode == 'I;16' or img.mode == 'I', 'Mode is %s for file %s.' % (
         img.mode, path)
     (width, height) = img.size
     greyscale_map = list(img.getdata())
-    greyscale_map = np.array(greyscale_map)
+    greyscale_map = numpy.array(greyscale_map)
     greyscale_map = greyscale_map.reshape((height, width))
   else:
-    greyscale_map = tiff.TiffFile(path, 'r').asarray()
+    greyscale_map = skimage.external.tifffile.TiffFile(path, 'r').asarray()
 
   # Normalize to float in range [0, 1]
-  assert np.max(greyscale_map) <= 65535
-  greyscale_map_normalized = greyscale_map.astype(np.float32) / 65535
+  assert numpy.max(greyscale_map) <= 65535
+  greyscale_map_normalized = greyscale_map.astype(numpy.float32) / 65535
   return greyscale_map_normalized
 
 
@@ -430,8 +427,8 @@ def image_size_from_glob(glob, patch_width):
   if not image_paths:
     raise ValueError('No input images found in the first glob: %s.' % glob)
   image = read_16_bit_greyscale(image_paths[0])
-  image_width = int(patch_width * np.floor(image.shape[1] / patch_width))
-  image_height = int(patch_width * np.floor(image.shape[0] / patch_width))
+  image_width = int(patch_width * numpy.floor(image.shape[1] / patch_width))
+  image_height = int(patch_width * numpy.floor(image.shape[0] / patch_width))
 
   image_size = collections.namedtuple('image_size', ['height', 'width'])
   return image_size(image_height, image_width)
@@ -449,7 +446,7 @@ def get_images_from_glob(glob, max_images):
     List of string of image paths.
   """
   logging.info('Finding files for glob %s', glob)
-  paths = glob_lib.glob(glob)
+  paths = glob.glob(glob)
 
   # Filter out paths that are not PNG or TIF.
   filtered_paths = []
@@ -496,7 +493,7 @@ def read_labeled_dataset(list_of_globs,
     Dataset object.
   """
   class_labels = range(num_classes)
-  labels = np.zeros((0, num_classes), dtype=np.float32)
+  labels = numpy.zeros((0, num_classes), dtype=numpy.float32)
   image_paths = []
 
   for glob, class_label in zip(list_of_globs, class_labels):
@@ -508,13 +505,13 @@ def read_labeled_dataset(list_of_globs,
 
     image_paths.extend(image_paths_i)
 
-    labels_class_i = np.zeros(
-        (len(image_paths_i), num_classes), dtype=np.float32)
+    labels_class_i = numpy.zeros(
+        (len(image_paths_i), num_classes), dtype=numpy.float32)
     labels_class_i[:, class_label] = 1.0
     logging.info('Assigning class label %d for images from %s', class_label,
                  glob)
 
-    labels = np.concatenate((labels, labels_class_i))
+    labels = numpy.concatenate((labels, labels_class_i))
   if labels.shape[0] == 0:
     logging.fatal('No images found in %s', str(list_of_globs))
 
@@ -561,7 +558,7 @@ def read_unlabeled_dataset(list_of_globs,
   logging.info('Using unlabeled image dataset of %d examples from %s',
                len(image_paths), list_of_globs)
 
-  labels = np.zeros((len(image_paths), num_classes), dtype=np.float32)
+  labels = numpy.zeros((len(image_paths), num_classes), dtype=numpy.float32)
 
   return Dataset(labels, image_paths, image_width, image_height,
                  image_background_value, image_brightness_scale)

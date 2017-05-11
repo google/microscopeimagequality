@@ -21,24 +21,24 @@ Example usage:
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
-import numpy as np
-from PIL import Image
-import png
-import skimage.external.tifffile as tiff
-import tensorflow as tf
-
 import logging
+import os
 import sys
+
+import PIL
+import numpy as np
+import png
+import skimage.external.tifffile
+import tensorflow
+
+import data_provider
+import constants
+import dataset_creation
+import evaluation
+
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-from quality import constants
-from quality import data_provider
-from quality import dataset_creation
-from quality import miq_eval
-
-flags = tf.app.flags
+flags = tensorflow.app.flags
 
 flags.DEFINE_string('eval_directory', None,
                     'Output directory to save results to.')
@@ -60,7 +60,7 @@ flags.DEFINE_integer('num_classes', 11, 'Number of model classes')
 flags.DEFINE_boolean('show_plots', False, 'Whether to show plots')
 flags.DEFINE_integer('shard_num', 1, 'Job task number')
 flags.DEFINE_integer('num_shards', 1, 'Total number of job tasks')
-flags.DEFINE_string('probability_aggregation_method', miq_eval.METHOD_AVERAGE,
+flags.DEFINE_string('probability_aggregation_method', evaluation.METHOD_AVERAGE,
                     'Method for aggregating probabilities.')
 flags.DEFINE_integer('inference_model_id', 0, 'Model ID.')
 
@@ -140,9 +140,9 @@ def save_masks_and_annotated_visualization(orig_name,
     raise ValueError('File for annotating does not exist: %s.' % orig_name)
   file_extension = os.path.splitext(orig_name)[1]
   if file_extension == '.png':
-    output_width, output_height = Image.open(orig_name, 'r').size
+    output_width, output_height = PIL.Image.open(orig_name, 'r').size
   elif file_extension == '.tif':
-    output_height, output_width = tiff.TiffFile(orig_name, 'r').asarray().shape
+    output_height, output_width = skimage.external.tifffile.TiffFile(orig_name, 'r').asarray().shape
   else:
     raise ValueError('Unsupported file extension %s', file_extension)
   logging.info('Original image size %d x %d', output_height, output_width)
@@ -159,7 +159,7 @@ def save_masks_and_annotated_visualization(orig_name,
     im_padded = np.pad(im, pad_size, 'constant')
 
     if not is_greyscale_mask:
-      img = Image.fromarray(im_padded)
+      img = PIL.Image.fromarray(im_padded)
       img.save(image_output_path)
     else:
       with open(image_output_path, 'w') as f:
@@ -177,7 +177,7 @@ def save_masks_and_annotated_visualization(orig_name,
                  (np_labels[0], prediction, certainties['mean']))
 
   annotated_visualization = np.squeeze(
-      miq_eval.visualize_image_predictions(
+      evaluation.visualize_image_predictions(
           np_images,
           np_probabilities,
           np_labels,
@@ -202,7 +202,7 @@ def save_masks_and_annotated_visualization(orig_name,
                                     mask_format % orig_name_png))
 
   # Create, pad and save masks.
-  certainties = miq_eval.certainties_from_probabilities(np_probabilities)
+  certainties = evaluation.certainties_from_probabilities(np_probabilities)
   certainties = np.round(certainties *
                          np.iinfo(np.uint16).max).astype(np.uint16)
   save_mask_from_patch_values(certainties, constants.CERTAINTY_MASK_FORMAT)
@@ -233,12 +233,12 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
   if not os.path.isdir(model_directory):
     logging.fatal('Model checkpoint directory does not exist.')
 
-  saver = tf.train.Saver()
-  with tf.Session() as sess:
+  saver = tensorflow.train.Saver()
+  with tensorflow.Session() as sess:
     logging.info('Restoring checkpoint %s', model_ckpt_file)
     saver.restore(sess, model_ckpt_file)
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    coord = tensorflow.train.Coordinator()
+    threads = tensorflow.train.start_queue_runners(sess=sess, coord=coord)
     logging.info('Started queue_runners.')
 
     for i in range(num_samples):
@@ -247,7 +247,7 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
        np_image_paths] = sess.run([probabilities, labels, images, image_paths])
 
       (prediction, certainties,
-       probabilities_i) = miq_eval.aggregate_prediction_from_probabilities(
+       probabilities_i) = evaluation.aggregate_prediction_from_probabilities(
            np_probabilities, aggregation_method)
 
       # Each name must be unique since all workers write to same directory.
@@ -264,7 +264,7 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
         aggregate_probabilities = np.expand_dims(probabilities_i, 0)
         orig_names = []
         all_certainties = {}
-        for k in miq_eval.CERTAINTY_TYPES.values():
+        for k in evaluation.CERTAINTY_TYPES.values():
           all_certainties[k] = []
       else:
         patch_probabilities = np.concatenate((patch_probabilities,
@@ -285,16 +285,16 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
 
     output_file = (os.path.join(output_directory, 'results-%05d-of-%05d.csv') %
                    (shard_num, num_shards))
-    miq_eval.save_inference_results(aggregate_probabilities, aggregate_labels,
-                                    all_certainties, orig_names,
-                                    aggregate_predictions, output_file)
+    evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
+                                      all_certainties, orig_names,
+                                      aggregate_predictions, output_file)
 
     # If we're not sharding, save out accuracy statistics.
     if num_shards == 1:
       save_confusion = not np.any(aggregate_labels < 0)
-      miq_eval.save_result_plots(aggregate_probabilities, aggregate_labels,
-                                 save_confusion, output_directory,
-                                 patch_probabilities, patch_labels)
+      evaluation.save_result_plots(aggregate_probabilities, aggregate_labels,
+                                   save_confusion, output_directory,
+                                   patch_probabilities, patch_labels)
     logging.info('Stopping threads')
     coord.request_stop()
     coord.join(threads)
@@ -378,7 +378,7 @@ def main(_):
   num_samples = data_provider.get_num_records(tfexamples_tfrecord % _SPLIT_NAME)
   logging.info('TFRecord has %g samples.', num_samples)
 
-  g = tf.Graph()
+  g = tensorflow.Graph()
   with g.as_default():
     images, one_hot_labels, image_paths, _ = data_provider.provide_data(
         tfexamples_tfrecord,
@@ -391,7 +391,7 @@ def main(_):
         randomize=False,
         num_threads=1)
 
-    model_metrics = miq_eval.get_model_and_metrics(
+    model_metrics = evaluation.get_model_and_metrics(
         images,
         num_classes=FLAGS.num_classes,
         one_hot_labels=one_hot_labels,
@@ -421,4 +421,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tensorflow.app.run()

@@ -28,35 +28,24 @@ Usage:
 # limitations under the License.
 
 import collections
-
 import csv
+import logging
 import os
 
-import matplotlib.pyplot as plt
-import numpy as np
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+import PIL
+import matplotlib.pyplot
+import numpy
 import scipy.misc
 import scipy.stats
+import tensorflow
+import tensorflow.contrib.slim
+import tensorflow.python.ops
 
+import data_provider
+import dataset_creation
+import miq
 
-from tensorflow.contrib.slim import dataset
-from tensorflow.contrib.slim import dataset_data_provider
-from tensorflow.contrib.slim import tfexample_decoder
-
-import tensorflow.contrib.slim as slim
-import tensorflow as tf
-
-import logging
-
-from tensorflow.python.ops import check_ops
-
-from quality import data_provider
-from quality import dataset_creation
-from quality import miq
-
-flags = tf.app.flags
+flags = tensorflow.app.flags
 
 _IMAGE_ANNOTATION_MAGNIFICATION_PERCENT = 800
 CERTAINTY_NAMES = ['mean', 'max', 'aggregate', 'weighted']
@@ -140,19 +129,19 @@ def annotate_patch(image, prediction, label):
 
   # Enlarge the image so the text is legible.
   resized_image = scipy.misc.imresize(
-      np.squeeze(image),
+      numpy.squeeze(image),
       size=float(_IMAGE_ANNOTATION_MAGNIFICATION_PERCENT)/100.0,
       interp='nearest')
 
   # Use PIL image to introduce a text label, then convert back to numpy array.
-  pil_image = Image.fromarray(resized_image)
-  draw = ImageDraw.Draw(pil_image)
+  pil_image = PIL.Image.fromarray(resized_image)
+  draw = PIL.ImageDraw.Draw(pil_image)
   draw.text((0, 0), text_label, 255)
-  annotated_image = np.asarray(pil_image, dtype=image.dtype)
+  annotated_image = numpy.asarray(pil_image, dtype=image.dtype)
 
   # Expand from [new_width, new_width] shape to 4D shape required by TensorFlow.
-  annotated_image_expanded = np.expand_dims(
-      np.expand_dims(
+  annotated_image_expanded = numpy.expand_dims(
+      numpy.expand_dims(
           annotated_image, axis=0), axis=3)
 
   return annotated_image_expanded
@@ -176,21 +165,21 @@ def annotate_classification_errors(images, predictions, labels, probabilities,
   """
 
   for i in range(images.get_shape().as_list()[0]):
-    label = tf.squeeze(tf.strided_slice(labels, [i], [i + 1]))
-    prediction = tf.squeeze(tf.strided_slice(predictions, [i], [i + 1]))
-    patch = tf.strided_slice(images, [i, 0, 0, 0], [
+    label = tensorflow.squeeze(tensorflow.strided_slice(labels, [i], [i + 1]))
+    prediction = tensorflow.squeeze(tensorflow.strided_slice(predictions, [i], [i + 1]))
+    patch = tensorflow.strided_slice(images, [i, 0, 0, 0], [
         i + 1, images.get_shape().as_list()[1], images.get_shape().as_list()[2],
         images.get_shape().as_list()[3]
     ])
 
-    patch_annotated = tf.py_func(annotate_patch, [patch, prediction, label],
-                                 [patch.dtype])[0]
+    patch_annotated = tensorflow.py_func(annotate_patch, [patch, prediction, label],
+                                         [patch.dtype])[0]
 
-    tf.summary.image('Patch_%02d' % i, patch_annotated)
-  image = tf.py_func(visualize_image_predictions,
-                     [images, probabilities, labels, image_height, image_width],
-                     [tf.uint8])[0]
-  summary = tf.summary.image('Annotated_Image_', image)
+    tensorflow.summary.image('Patch_%02d' % i, patch_annotated)
+  image = tensorflow.py_func(visualize_image_predictions,
+                             [images, probabilities, labels, image_height, image_width],
+                             [tensorflow.uint8])[0]
+  summary = tensorflow.summary.image('Annotated_Image_', image)
   return image, summary
 
 
@@ -225,10 +214,10 @@ def visualize_image_predictions(patches,
   """
   assert len(patches.shape) == 4
   assert patches.shape[0] == probabilities.shape[0]
-  assert np.all(labels == labels[0])
+  assert numpy.all(labels == labels[0])
 
   image_rgb = get_rgb_image(
-      max(1.0 / 65535, np.max(patches)),
+      max(1.0 / 65535, numpy.max(patches)),
       patches,
       probabilities,
       labels, (image_height, image_width),
@@ -236,17 +225,17 @@ def visualize_image_predictions(patches,
 
   # Plot it.
   if show_plot:
-    plt.figure(figsize=(6, 6))
-    plt.imshow(image_rgb, interpolation='nearest', cmap='gray')
-    plt.grid('off')
+    matplotlib.pyplot.figure(figsize=(6, 6))
+    matplotlib.pyplot.imshow(image_rgb, interpolation='nearest', cmap='gray')
+    matplotlib.pyplot.grid('off')
 
   # Save it.
   if output_path is not None:
-    im = Image.fromarray(image_rgb)
+    im = PIL.Image.fromarray(image_rgb)
     im.save(output_path, 'w')
 
   # Expand from to 4D shape required by TensorFlow.
-  return np.expand_dims(image_rgb, 0)
+  return numpy.expand_dims(image_rgb, 0)
 
 
 def _get_class_rgb(num_classes, predicted_class):
@@ -268,7 +257,7 @@ def _get_class_rgb(num_classes, predicted_class):
   # Map [0, num_classes) to [0, 255)
   colormap_index = int(predicted_class * 255.0 / num_classes)
   # Return just the RGB values of the colormap.
-  return plt.cm.get_cmap(CLASS_ANNOTATION_COLORMAP)(colormap_index)[0:3]
+  return matplotlib.pyplot.cm.get_cmap(CLASS_ANNOTATION_COLORMAP)(colormap_index)[0:3]
 
 
 def get_certainty(probabilities):
@@ -282,19 +271,19 @@ def get_certainty(probabilities):
     A float in the range [0.0, 1.0] representing the certainty of the
     distribution.
   """
-  sum_prob = np.sum(probabilities)
+  sum_prob = numpy.sum(probabilities)
   num_classes = probabilities.shape[0]
   if sum_prob > 0:
     normalized_probabilities = probabilities / sum_prob
 
     certainty_proxy = 1.0 - scipy.stats.entropy(
-        normalized_probabilities) / np.log(num_classes)
+        normalized_probabilities) / numpy.log(num_classes)
 
   else:
     certainty_proxy = 0.0
   assert certainty_proxy - 1 < 1e-6, ('certainty: ' ' %g') % certainty_proxy
   assert certainty_proxy > -1e-6, ('certainty:' ' %g') % certainty_proxy
-  certainty_proxy = np.clip(certainty_proxy, 0.0, 1.0)
+  certainty_proxy = numpy.clip(certainty_proxy, 0.0, 1.0)
   return certainty_proxy
 
 
@@ -326,13 +315,13 @@ def get_rgb_image(max_value,
   assert patches.shape[3] == 1
   num_classes = probabilities.shape[1]
 
-  patches_rgb = np.zeros(
+  patches_rgb = numpy.zeros(
       (patches.shape[0], patches.shape[1], patches.shape[2], 3))
 
   for i in range(patches.shape[0]):
     patch = patches[i, :, :, :]
 
-    prediction = np.argmax(probabilities[i, :])
+    prediction = numpy.argmax(probabilities[i, :])
 
     certainty_proxy = get_certainty(probabilities[i, :])
 
@@ -341,9 +330,9 @@ def get_rgb_image(max_value,
     class_rgb = _get_class_rgb(num_classes, prediction)
 
     class_rgb_with_certainty = [
-        np.float(max_value * certainty_proxy * c) for c in class_rgb
-    ]
-    patches_rgb[i, :, :, :] = np.concatenate(
+        numpy.float(max_value * certainty_proxy * c) for c in class_rgb
+        ]
+    patches_rgb[i, :, :, :] = numpy.concatenate(
         (_set_border_pixels(patch, class_rgb_with_certainty[0]),
          _set_border_pixels(patch, class_rgb_with_certainty[1]),
          _set_border_pixels(patch, class_rgb_with_certainty[2])),
@@ -362,7 +351,7 @@ def get_rgb_image(max_value,
 
   if apply_gamma:
     image_rgb = apply_image_gamma(image_rgb)
-  image_rgb = (255 * image_rgb / np.max(image_rgb)).astype(np.uint8)
+  image_rgb = (255 * image_rgb / numpy.max(image_rgb)).astype(numpy.uint8)
   return image_rgb
 
 
@@ -380,7 +369,7 @@ def certainties_from_probabilities(probabilities):
   Returns:
     Numpy array of certainties, of shape (batch_size).
   """
-  certainties = np.zeros(probabilities.shape[0])
+  certainties = numpy.zeros(probabilities.shape[0])
   for i in range(probabilities.shape[0]):
     certainties[i] = get_certainty(probabilities[i, :])
   return certainties
@@ -405,29 +394,29 @@ def aggregate_prediction_from_probabilities(probabilities,
   certainties = certainties_from_probabilities(probabilities)
 
   certainty_dict = {}
-  certainty_dict['mean'] = np.round(np.mean(certainties), 3)
-  certainty_dict['max'] = np.round(np.max(certainties), 3)
+  certainty_dict['mean'] = numpy.round(numpy.mean(certainties), 3)
+  certainty_dict['max'] = numpy.round(numpy.max(certainties), 3)
 
   weights = certainties
-  weights = None if np.sum(weights) == 0 else weights
+  weights = None if numpy.sum(weights) == 0 else weights
 
   if aggregation_method == METHOD_AVERAGE:
-    probabilities_aggregated = np.average(probabilities, 0, weights=weights)
+    probabilities_aggregated = numpy.average(probabilities, 0, weights=weights)
   elif aggregation_method == METHOD_PRODUCT:
     # For i denoting index within batch and c the class:
     #   Q_c = product_over_i(p_c(i))
     # probabilities_aggregated = Q_c / sum_over_c(Q_c)
     # The following computes this using logs for numerical stability.
-    sum_log_probabilities = np.sum(np.log(probabilities), 0)
-    probabilities_aggregated = np.exp(
+    sum_log_probabilities = numpy.sum(numpy.log(probabilities), 0)
+    probabilities_aggregated = numpy.exp(
         sum_log_probabilities - scipy.misc.logsumexp(sum_log_probabilities))
   else:
     raise ValueError('Invalid aggregation method %s.' % aggregation_method)
-  predicted_class = np.argmax(probabilities_aggregated)
-  certainty_dict['aggregate'] = np.round(
+  predicted_class = numpy.argmax(probabilities_aggregated)
+  certainty_dict['aggregate'] = numpy.round(
       get_certainty(probabilities_aggregated), 3)
-  certainty_dict['weighted'] = np.round(
-      np.average(
+  certainty_dict['weighted'] = numpy.round(
+      numpy.average(
           certainties, 0, weights=weights), 3)
 
   assert sorted(CERTAINTY_TYPES.values()) == sorted(certainty_dict.keys())
@@ -483,7 +472,7 @@ def _patches_to_image(patches, image_shape):
     raise ValueError('image_shape %s not valid for %d %dx%d patches.' %
                      (str(image_shape), num_patches, patch_width, patch_width))
 
-  image = np.zeros(
+  image = numpy.zeros(
       [num_rows * patch_width, num_cols * patch_width, patches.shape[3]],
       dtype=patches.dtype)
 
@@ -509,11 +498,11 @@ def _set_border_pixels(patch, value, border_size=2):
   """
   assert len(patch.shape) == 3
   assert patch.shape[2] == 1
-  return np.expand_dims(
-      np.pad(patch[border_size:-border_size, border_size:-border_size, 0],
-             border_size,
+  return numpy.expand_dims(
+      numpy.pad(patch[border_size:-border_size, border_size:-border_size, 0],
+                border_size,
              'constant',
-             constant_values=value),
+                constant_values=value),
       2)
 
 
@@ -528,10 +517,10 @@ def apply_image_gamma(original_image, gamma=2.2):
     A numpy array of same shape and type as the input image, but with a gamma
     transform applied independently at each pixel.
   """
-  image = np.copy(original_image).astype(np.float32)
-  max_value = np.max(image)
+  image = numpy.copy(original_image).astype(numpy.float32)
+  max_value = numpy.max(image)
   image /= max_value
-  image = np.power(image, 1 / gamma)
+  image = numpy.power(image, 1 / gamma)
   image *= max_value
   return image.astype(original_image.dtype)
 
@@ -552,20 +541,20 @@ def get_aggregated_prediction(probabilities, labels, batch_size):
   # We aggregate the probabilities by using a weighted average.
   def aggregate_prediction(probs):
     return aggregate_prediction_from_probabilities(probs).predictions.astype(
-        np.int64)
+        numpy.int64)
 
-  prediction = tf.py_func(aggregate_prediction, [probabilities], tf.int64)
+  prediction = tensorflow.py_func(aggregate_prediction, [probabilities], tensorflow.int64)
 
   # Check that all batch labels are the same class.
-  max_label = tf.reduce_max(labels)
-  with tf.control_dependencies([check_ops.assert_equal(
-              tf.multiply(
-                  max_label, tf.constant(
+  max_label = tensorflow.reduce_max(labels)
+  with tensorflow.control_dependencies([tensorflow.python.ops.check_ops.assert_equal(
+              tensorflow.multiply(
+                  max_label, tensorflow.constant(
                       batch_size, dtype=max_label.dtype)),
-              tf.reduce_sum(labels),
+              tensorflow.reduce_sum(labels),
               name='check_all_batch_labels_same')]):
 
-    label = tf.reduce_mean(labels)
+    label = tensorflow.reduce_mean(labels)
 
     # Since the Tensor shape cannot be inferred by py_func() manually annotate it.
     prediction.set_shape(label.get_shape())
@@ -596,11 +585,11 @@ def get_confusion_matrix(predicted_probabilities,
 
   assert predicted_probabilities.shape[0] == len(true_labels)
 
-  confusion = np.zeros(
+  confusion = numpy.zeros(
       (predicted_probabilities.shape[1], predicted_probabilities.shape[1]),
-      dtype=np.float32)
+      dtype=numpy.float32)
   if use_predictions_instead_of_probabilities:
-    predicted_classes = np.argmax(predicted_probabilities, 1)
+    predicted_classes = numpy.argmax(predicted_probabilities, 1)
     for i in range(len(true_labels)):
       confusion[true_labels[i], predicted_classes[i]] += 1
   else:
@@ -608,17 +597,17 @@ def get_confusion_matrix(predicted_probabilities,
       confusion[label, :] += predicted_probabilities[i, :]
       # Normalize.
     for i in range(confusion.shape[0]):
-      confusion[i, :] /= np.sum(confusion[i, :])
+      confusion[i, :] /= numpy.sum(confusion[i, :])
 
-  plt.figure()
-  cmap='inferno' if 'inferno' in plt.colormaps() else 'gray' 
-  plt.imshow(confusion, interpolation='nearest', cmap=cmap)
-  plt.grid('off')
-  plt.colorbar()
-  plt.xlabel('predicted class')
-  plt.ylabel('actual class')
-  plt.title(plot_title)
-  plt.savefig(open(filename, 'w'), bbox_inches='tight')
+  matplotlib.pyplot.figure()
+  cmap='inferno' if 'inferno' in matplotlib.pyplot.colormaps() else 'gray'
+  matplotlib.pyplot.imshow(confusion, interpolation='nearest', cmap=cmap)
+  matplotlib.pyplot.grid('off')
+  matplotlib.pyplot.colorbar()
+  matplotlib.pyplot.xlabel('predicted class')
+  matplotlib.pyplot.ylabel('actual class')
+  matplotlib.pyplot.title(plot_title)
+  matplotlib.pyplot.savefig(open(filename, 'w'), bbox_inches='tight')
   print 'Saved confusion matrix at %s' % filename
   return confusion
 
@@ -652,14 +641,14 @@ def get_model_and_metrics(images,
   # If there exists no label for the ith row, then one_hot_labels[:,i] will all
   # be zeros. In this case, labels[i] should be -1. Otherwise, labels[i]
   # reflects the true class.
-  label_exists = tf.equal(tf.reduce_sum(one_hot_labels, 1), 1)
-  label_for_unlabeled_data = tf.multiply(
-      tf.constant(-1, dtype=tf.int64),
-      tf.ones([tf.shape(one_hot_labels)[0]], dtype=tf.int64))
-  labels = tf.where(label_exists,
-                    tf.argmax(one_hot_labels, 1), label_for_unlabeled_data)
-  probabilities = tf.nn.softmax(logits)
-  predictions = tf.argmax(logits, 1)
+  label_exists = tensorflow.equal(tensorflow.reduce_sum(one_hot_labels, 1), 1)
+  label_for_unlabeled_data = tensorflow.multiply(
+      tensorflow.constant(-1, dtype=tensorflow.int64),
+      tensorflow.ones([tensorflow.shape(one_hot_labels)[0]], dtype=tensorflow.int64))
+  labels = tensorflow.where(label_exists,
+                            tensorflow.argmax(one_hot_labels, 1), label_for_unlabeled_data)
+  probabilities = tensorflow.nn.softmax(logits)
+  predictions = tensorflow.argmax(logits, 1)
 
   return ModelAndMetrics(logits, labels, probabilities, predictions)
 
@@ -700,7 +689,7 @@ def save_inference_results(aggregate_probabilities, aggregate_labels,
     writer.writerows(
         zip(orig_names, aggregate_predictions, certainties['mean'], certainties[
             'max'], certainties['aggregate'], certainties['weighted'],
-            aggregate_labels, *np.transpose(aggregate_probabilities).tolist()))
+            aggregate_labels, *numpy.transpose(aggregate_probabilities).tolist()))
 
   logging.info('Wrote %g results to %s', len(orig_names), output_file)
 
@@ -756,9 +745,9 @@ def load_inference_results(directory_csvs):
         row_probabilities = row[len(CERTAINTY_TYPES) + 3:]
         if aggregate_probabilities is None:
           # Initialize
-          aggregate_probabilities = np.zeros(
-              (num_entries_total, len(row_probabilities)), dtype=np.float32)
-        aggregate_probabilities[count, :] = np.array(row_probabilities)
+          aggregate_probabilities = numpy.zeros(
+              (num_entries_total, len(row_probabilities)), dtype=numpy.float32)
+        aggregate_probabilities[count, :] = numpy.array(row_probabilities)
 
         count += 1
   assert count == num_entries_total
@@ -785,7 +774,7 @@ def save_result_plots(aggregate_probabilities,
     patch_labels: If not None, the list of numbers representing true classes, of
       length num_samples.
   """
-  aggregate_predictions = list(np.argmax(aggregate_probabilities, 1))
+  aggregate_predictions = list(numpy.argmax(aggregate_probabilities, 1))
 
   if save_confusion:
     with open(os.path.join(output_directory, 'accuracy.txt'), 'w') as f:
@@ -847,26 +836,26 @@ def save_prediction_histogram(predictions, save_path, num_classes, log=False):
     num_classes: Integer representing number of classes.
    log: Boolean, whether to use a lot scale for histogram.
   """
-  plt.figure()
-  _, _, patches = plt.hist(
+  matplotlib.pyplot.figure()
+  _, _, patches = matplotlib.pyplot.hist(
       predictions, num_classes, range=(0, num_classes - 1), log=log)
 
-  ylim = plt.gca().get_ylim()
-  plt.ylim(0.8 * ylim[0], 1.2 * ylim[1])
-  plt.xlim(0, num_classes-1)
+  ylim = matplotlib.pyplot.gca().get_ylim()
+  matplotlib.pyplot.ylim(0.8 * ylim[0], 1.2 * ylim[1])
+  matplotlib.pyplot.xlim(0, num_classes - 1)
 
-  color_index = np.array(range(num_classes)).astype(np.float32) / num_classes
+  color_index = numpy.array(range(num_classes)).astype(numpy.float32) / num_classes
 
-  color_map = plt.cm.get_cmap(CLASS_ANNOTATION_COLORMAP)
+  color_map = matplotlib.pyplot.cm.get_cmap(CLASS_ANNOTATION_COLORMAP)
   for c, p in zip(color_index, patches):
-    plt.setp(p, 'facecolor', color_map(c))
+    matplotlib.pyplot.setp(p, 'facecolor', color_map(c))
 
-  plt.tick_params(
+  matplotlib.pyplot.tick_params(
       labelbottom=True, bottom=False, left=False, top=False, right=False)
-  plt.ylabel('image count')
-  plt.xlabel('predicted class')
-  plt.grid('off')
-  plt.savefig(open(save_path, 'w'), bbox_inches='tight')
+  matplotlib.pyplot.ylabel('image count')
+  matplotlib.pyplot.xlabel('predicted class')
+  matplotlib.pyplot.grid('off')
+  matplotlib.pyplot.savefig(open(save_path, 'w'), bbox_inches='tight')
 
 
 def main(_):
@@ -892,7 +881,7 @@ def main(_):
   tfexamples_tfrecord_file_pattern = os.path.join(FLAGS.eval_dir,
                                                   output_tfrecord_file_pattern)
 
-  g = tf.Graph()
+  g = tensorflow.Graph()
   with g.as_default():
     # All patches evaluated in a batch correspond to one single input image.
     batch_size = int(image_size.height * image_size.width / FLAGS.patch_width
@@ -917,27 +906,27 @@ def main(_):
 
     # Define the loss
     miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
-    loss = tf.losses.get_total_loss()
+    loss = tensorflow.losses.get_total_loss()
 
     # Additional aggregate metrics
     aggregated_prediction, aggregated_label = get_aggregated_prediction(
         probabilities, labels, batch_size)
-    names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
+    names_to_values, names_to_updates = tensorflow.contrib.slim.metrics.aggregate_metric_map({
         'Accuracy':
-            tf.contrib.metrics.streaming_accuracy(predictions, labels),
+            tensorflow.contrib.metrics.streaming_accuracy(predictions, labels),
         'Mean Loss':
-            tf.contrib.metrics.streaming_mean(loss),
+            tensorflow.contrib.metrics.streaming_mean(loss),
         'Aggregated Accuracy':
-            tf.contrib.metrics.streaming_accuracy(aggregated_prediction, aggregated_label),
+            tensorflow.contrib.metrics.streaming_accuracy(aggregated_prediction, aggregated_label),
     })
 
     for name, value in names_to_values.iteritems():
-      tf.summary.scalar(name, value)
+      tensorflow.summary.scalar(name, value)
 
-    tf.summary.histogram(FLAGS.eval_type + ' images', images)
-    tf.summary.histogram(FLAGS.eval_type + ' labels', labels)
-    tf.summary.histogram(FLAGS.eval_type + ' predictions', predictions)
-    tf.summary.histogram(FLAGS.eval_type + ' probabilities', probabilities)
+    tensorflow.summary.histogram(FLAGS.eval_type + ' images', images)
+    tensorflow.summary.histogram(FLAGS.eval_type + ' labels', labels)
+    tensorflow.summary.histogram(FLAGS.eval_type + ' predictions', predictions)
+    tensorflow.summary.histogram(FLAGS.eval_type + ' probabilities', probabilities)
 
     annotate_classification_errors(
         images,
@@ -950,7 +939,7 @@ def main(_):
     # This ensures that we evaluate over exactly all samples.
     num_batches = num_samples
 
-    slim.evaluation.evaluation_loop(
+    tensorflow.contrib.slim.evaluation.evaluation_loop(
         master='',
         checkpoint_dir=FLAGS.checkpoint_dir,
         logdir=FLAGS.eval_dir,
@@ -960,4 +949,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tensorflow.app.run()

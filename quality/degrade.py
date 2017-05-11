@@ -26,15 +26,14 @@ Example usage:
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 
-import numpy as np
+import numpy
 import png
-from scipy import integrate
-from scipy import signal
-from scipy import special
+import scipy
 
-from quality import dataset_creation
+import dataset_creation
 
 
 class ImageDegrader(object):
@@ -62,7 +61,7 @@ class ImageDegrader(object):
     """
     self._photoelectron_factor = photoelectron_factor
     self._sensor_offset_in_photoelectrons = sensor_offset_in_photoelectrons
-    self._random_generator = np.random.RandomState(random_seed)
+    self._random_generator = numpy.random.RandomState(random_seed)
 
   def apply_poisson_noise(self, image):
     """Applies per-pixel Poisson noise to an image.
@@ -76,14 +75,14 @@ class ImageDegrader(object):
     Returns:
       A 2D numpy float array of same shape as 'image', in [0.0, 1.0].
     """
-    image_photoelectrons = np.maximum(0.0, image * self._photoelectron_factor -
-                                      self._sensor_offset_in_photoelectrons)
+    image_photoelectrons = numpy.maximum(0.0, image * self._photoelectron_factor -
+                                         self._sensor_offset_in_photoelectrons)
     noisy_image_photoelectrons = self._random_generator.poisson(
-        image_photoelectrons).astype(np.float64)
+        image_photoelectrons).astype(numpy.float64)
     noisy_image = (
         noisy_image_photoelectrons + self._sensor_offset_in_photoelectrons
     ) / self._photoelectron_factor
-    clipped_image = np.minimum(1.0, noisy_image)
+    clipped_image = numpy.minimum(1.0, noisy_image)
     return clipped_image
 
   @staticmethod
@@ -99,8 +98,8 @@ class ImageDegrader(object):
     Returns:
       A 2D numpy float array of same shape as 'image', in [0.0, 1.0].
     """
-    psf_normalized = psf / np.sum(psf)
-    return signal.convolve2d(image, psf_normalized, 'same', boundary='symm')
+    psf_normalized = psf / numpy.sum(psf)
+    return scipy.signal.convolve2d(image, psf_normalized, 'same', boundary='symm')
 
   def set_exposure(self, image, exposure_factor):
     """Adjusts the image exposure.
@@ -114,8 +113,8 @@ class ImageDegrader(object):
       A 2D numpy float array of same shape as 'image', in [0.0, 1.0].
     """
 
-    image_without_offset = np.maximum(0.0,
-                                      (image * self._photoelectron_factor -
+    image_without_offset = numpy.maximum(0.0,
+                                         (image * self._photoelectron_factor -
                                        self._sensor_offset_in_photoelectrons))
 
     adjusted_without_offset = image_without_offset * exposure_factor
@@ -123,7 +122,7 @@ class ImageDegrader(object):
     adjusted = (
         (adjusted_without_offset + self._sensor_offset_in_photoelectrons) /
         self._photoelectron_factor)
-    clipped_image = np.minimum(1.0, adjusted)
+    clipped_image = numpy.minimum(1.0, adjusted)
     return clipped_image
 
 
@@ -157,7 +156,7 @@ def get_airy_psf(psf_width_pixels,
         'psf_width_pixels must be an odd number, but is %d.' % psf_width_pixels)
 
   meters_per_pixel = psf_width_meters / psf_width_pixels
-  psf = np.zeros((psf_width_pixels, psf_width_pixels), dtype=np.float64)
+  psf = numpy.zeros((psf_width_pixels, psf_width_pixels), dtype=numpy.float64)
   for i in xrange(psf_width_pixels):
     for j in xrange(psf_width_pixels):
       x = (i - (psf_width_pixels - 1.0) / 2.0) * meters_per_pixel
@@ -167,7 +166,7 @@ def get_airy_psf(psf_width_pixels,
 
   # Normalize PSF to max value.
   if normalize:
-    return psf / np.max(psf)
+    return psf / numpy.max(psf)
   return psf
 
 
@@ -186,17 +185,17 @@ def _evaluate_airy_function_at_point(x, y, z, wavelength, numerical_aperture,
   Returns:
     A real float, the value of the Airy point spread function at the coordinate.
   """
-  k = 2 * np.pi / wavelength
+  k = 2 * numpy.pi / wavelength
   NA = numerical_aperture  # pylint: disable=invalid-name
   n = refractive_index
 
   def function_to_integrate(rho):
-    bessel_arg = k * NA / n * np.sqrt(np.power(x, 2) + np.power(y, 2)) * rho
-    return special.j0(bessel_arg) * np.exp(-1.0 / 2.0 * 1j * k * np.power(
-        rho, 2) * z * np.power(NA / n, 2)) * rho
+    bessel_arg = k * NA / n * numpy.sqrt(numpy.power(x, 2) + numpy.power(y, 2)) * rho
+    return scipy.special.j0(bessel_arg) * numpy.exp(-1.0 / 2.0 * 1j * k * numpy.power(
+        rho, 2) * z * numpy.power(NA / n, 2)) * rho
 
   integral_result = _integrate_numerical(function_to_integrate, 0.0, 1.0)
-  return float(np.real(integral_result * np.conj(integral_result)))
+  return float(numpy.real(integral_result * numpy.conj(integral_result)))
 
 
 def _integrate_numerical(function_to_integrate, start, end):
@@ -212,13 +211,13 @@ def _integrate_numerical(function_to_integrate, start, end):
   """
 
   def real_function(x):
-    return np.real(function_to_integrate(x))
+    return numpy.real(function_to_integrate(x))
 
   def imag_function(x):
-    return np.imag(function_to_integrate(x))
+    return numpy.imag(function_to_integrate(x))
 
-  real_result = integrate.quad(real_function, start, end)[0]
-  imag_result = integrate.quad(imag_function, start, end)[0]
+  real_result = scipy.integrate.quad(real_function, start, end)[0]
+  imag_result = scipy.integrate.quad(imag_function, start, end)[0]
   return real_result + 1j * imag_result
 
 
@@ -232,10 +231,10 @@ def write_png(image, path):
   Raises:
     ValueError: If the image values are out of range.
   """
-  if np.max(image) > 1.0 or np.min(image) < 0.0:
-    raise ValueError('Exceeds dimensions %g, %g.' % (np.min(image),
-                                                     np.max(image)))
-  image = (65535 * image).astype(np.uint16)
+  if numpy.max(image) > 1.0 or numpy.min(image) < 0.0:
+    raise ValueError('Exceeds dimensions %g, %g.' % (numpy.min(image),
+                                                     numpy.max(image)))
+  image = (65535 * image).astype(numpy.uint16)
   with open(path, 'w') as f:
     writer = png.Writer(
         width=image.shape[1],

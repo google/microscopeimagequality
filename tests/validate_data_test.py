@@ -14,11 +14,11 @@
 # limitations under the License.
 
 import os
-
 import unittest
+
 import tensorflow as tf
 
-from quality import validate_data
+from quality.quality import validate_data
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -27,7 +27,7 @@ class ValidateDataTest(unittest.TestCase):
 
   def setUp(self):
     self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
-,"testdata")
+,"data")
     self.input_image_path = os.path.join(
         self.input_directory, 'BBBC006_z_aligned__a01__s1__w1_10.png')
 

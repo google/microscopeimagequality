@@ -13,20 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
-import numpy as np
-from PIL import Image
-import tensorflow as tf
-
 import logging
+import os
 import tempfile
 import unittest
 
+import numpy as np
+import tensorflow as tf
+from PIL import Image
 from quality import constants
 from quality import data_provider
-from quality import miq_eval
-from quality import run_inference
+from quality import evaluation
+
+from quality.quality import run_inference
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -35,9 +34,9 @@ class RunInferenceTest(tf.test.TestCase):
 
   def setUp(self):
     self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
-,"testdata")
+,"data")
     self.test_data_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
-,"testdata")
+,"data")
     self.test_dir = tempfile.mkdtemp()  
     self.glob_images = os.path.join(self.input_directory, 'images_for_glob_test/*')
 
@@ -56,7 +55,7 @@ class RunInferenceTest(tf.test.TestCase):
     test_filename = 'BBBC006_z_aligned__a01__s1__w1_10.png'
     orig_name = os.path.join(self.test_data_directory, test_filename)
     prediction = 1
-    certainties = {name: 0.3 for name in miq_eval.CERTAINTY_NAMES}
+    certainties = {name: 0.3 for name in evaluation.CERTAINTY_NAMES}
     num_patches = 4
     np_images = np.ones((num_patches, self.patch_width, self.patch_width, 1))
     np_probabilities = np.ones(
@@ -107,7 +106,7 @@ class RunInferenceTest(tf.test.TestCase):
                      '-6432-4f7e-bf58-625a1319a1c9.tif')
     orig_name = os.path.join(self.test_data_directory, test_filename)
     prediction = 1
-    certainties = {name: 0.3 for name in miq_eval.CERTAINTY_NAMES}
+    certainties = {name: 0.3 for name in evaluation.CERTAINTY_NAMES}
     num_patches = 4
     np_images = np.ones((num_patches, self.patch_width, self.patch_width, 1))
     np_probabilities = np.ones(
@@ -169,7 +168,7 @@ class RunInferenceTest(tf.test.TestCase):
           randomize=False,
           num_threads=1)
 
-      labels = miq_eval.get_model_and_metrics(
+      labels = evaluation.get_model_and_metrics(
           images,
           num_classes=num_classes,
           one_hot_labels=one_hot_labels,

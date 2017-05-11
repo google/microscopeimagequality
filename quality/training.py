@@ -27,14 +27,14 @@ Usage:
 
 import os
 
-import tensorflow.contrib.slim as slim
-import tensorflow as tf
+import tensorflow
+import tensorflow.contrib.slim
 
-from quality import data_provider
-from quality import dataset_creation
-from quality import miq
+import data_provider
+import dataset_creation
+import miq
 
-flags = tf.app.flags
+flags = tensorflow.app.flags
 
 FLAGS = flags.FLAGS
 
@@ -103,13 +103,13 @@ def main(_):
   tfexamples_tfrecord_file_pattern = os.path.join(FLAGS.train_log_dir,
                                                   output_tfrecord_file_pattern)
 
-  g = tf.Graph()
+  g = tensorflow.Graph()
   with g.as_default():
 
     # If ps_tasks is zero, the local device is used. When using multiple
     # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
     # across the different devices.
-    with tf.device(tf.train.replica_device_setter(FLAGS.ps_tasks)):
+    with tensorflow.device(tensorflow.train.replica_device_setter(FLAGS.ps_tasks)):
       images, one_hot_labels, _, _ = data_provider.provide_data(
           tfexamples_tfrecord_file_pattern,
           split_name='train',
@@ -120,8 +120,8 @@ def main(_):
           patch_width=FLAGS.patch_width)
 
       # Visualize the input
-      tf.summary.image('train_input', images)
-      labels = tf.argmax(one_hot_labels, 1)
+      tensorflow.summary.image('train_input', images)
+      labels = tensorflow.argmax(one_hot_labels, 1)
       # slim.summaries.add_histogram_summaries([images, labels])
 
 
@@ -134,20 +134,20 @@ def main(_):
 
       # Specify the loss function:
       miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
-      total_loss = tf.losses.get_total_loss()
-      tf.summary.scalar('Total_Loss', total_loss)
+      total_loss = tensorflow.losses.get_total_loss()
+      tensorflow.summary.scalar('Total_Loss', total_loss)
 
       # Specify the optimization scheme:
-      optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate)
+      optimizer = tensorflow.train.AdamOptimizer(FLAGS.learning_rate)
 
       # Set up training.
-      train_op = slim.learning.create_train_op(total_loss, optimizer)
+      train_op = tensorflow.contrib.slim.learning.create_train_op(total_loss, optimizer)
 
       # Monitor model variables for debugging.
       # slim.summaries.add_histogram_summaries(slim.get_model_variables())
       
       # Run training.
-      slim.learning.train(
+      tensorflow.contrib.slim.learning.train(
           train_op=train_op,
           logdir=FLAGS.train_log_dir,
           is_chief=FLAGS.task == 0,
@@ -157,4 +157,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tensorflow.app.run()

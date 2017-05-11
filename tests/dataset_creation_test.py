@@ -14,14 +14,13 @@
 # limitations under the License.
 
 import os
-
-import numpy as np
-
 import tempfile
-import tensorflow as tf
 import unittest
 
-from quality import dataset_creation
+import numpy as np
+import tensorflow as tf
+
+from quality.quality import dataset_creation
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -30,7 +29,7 @@ class DatasetCreationTest(unittest.TestCase):
 
   def setUp(self):
     self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
-,"testdata")
+,"data")
     self.test_dir = tempfile.mkdtemp()    
     self.input_image_path = os.path.join(
         self.input_directory, 'BBBC006_z_aligned__a01__s1__w1_10.png')

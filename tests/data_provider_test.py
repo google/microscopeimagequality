@@ -14,17 +14,15 @@
 # limitations under the License.
 
 import os
+import tempfile
+import unittest
 
 import numpy as np
 import png
-
-import tempfile
-from tensorflow.contrib.slim import dataset_data_provider
 import tensorflow as tf
+from tensorflow.contrib.slim import dataset_data_provider
 
-import unittest
-
-from quality import data_provider
+from quality.quality import data_provider
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -40,7 +38,7 @@ class DataProviderTest(unittest.TestCase):
 
   def setUp(self):
     self.input_directory = os.path.join(os.path.dirname(os.path.abspath(__file__))
-,"testdata")
+,"data")
     self.test_dir = tempfile.mkdtemp()    
     self.batch_size = TFRECORD_NUM_ENTRIES
     # For a patch size of 28, we have 324 patches per image in this tfrecord.
