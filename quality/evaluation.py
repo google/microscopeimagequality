@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """Evaluates a trained Miq model. Based on MNIST.
 
 Usage:
@@ -32,7 +34,8 @@ import csv
 import logging
 import os
 
-import PIL
+import PIL.Image
+import PIL.ImageDraw
 import matplotlib.pyplot
 import numpy
 import scipy.misc
@@ -527,15 +530,15 @@ def apply_image_gamma(original_image, gamma=2.2):
 def get_aggregated_prediction(probabilities, labels, batch_size):
     """Aggregates all probabilities in a batch into a single prediction.
 
-  Args:
+    Args:
     probabilities: Tensor of probabilities of size [batch_size x num_classes].
     labels: Tensor of labels of size [batch_size].
     batch_size: Integer representing number of samples per batch.
-  Returns:
+    Returns:
     The prediction is the class with highest average probability across the
     batch, as a single-element Tensor and the true label (single-element
     Tensor). All elements in `labels` must be indentical.
-  """
+    """
 
     # We aggregate the probabilities by using a weighted average.
     def aggregate_prediction(probs):
@@ -546,7 +549,8 @@ def get_aggregated_prediction(probabilities, labels, batch_size):
 
     # Check that all batch labels are the same class.
     max_label = tensorflow.reduce_max(labels)
-    with tensorflow.control_dependencies([tensorflow.python.ops.check_ops.assert_equal(
+
+    with tensorflow.control_dependencies([tensorflow.assert_equal(
             tensorflow.multiply(
                 max_label, tensorflow.constant(
                     batch_size, dtype=max_label.dtype)),
@@ -606,7 +610,7 @@ def get_confusion_matrix(predicted_probabilities,
     matplotlib.pyplot.ylabel('actual class')
     matplotlib.pyplot.title(plot_title)
     matplotlib.pyplot.savefig(open(filename, 'w'), bbox_inches='tight')
-    print 'Saved confusion matrix at %s' % filename
+    print('Saved confusion matrix at %s' % filename)
     return confusion
 
 

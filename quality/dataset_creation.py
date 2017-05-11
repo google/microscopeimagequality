@@ -15,10 +15,11 @@
 # limitations under the License.
 
 import collections
+import glob
 import logging
 import os
 
-import PIL
+import PIL.Image
 import numpy
 import skimage.external.tifffile
 import tensorflow
@@ -331,7 +332,7 @@ def generate_tf_example(image, label, image_path):
   Returns:
     TensorFlow Example.
   """
-    example = tensorflow.core.example.example_pb2.Example()
+    example = tensorflow.train.Example()
     features = example.features
 
     image_expanded = numpy.expand_dims(image, axis=2)
@@ -434,7 +435,7 @@ def image_size_from_glob(glob, patch_width):
     return image_size(image_height, image_width)
 
 
-def get_images_from_glob(glob, max_images):
+def get_images_from_glob(pathnames, max_images):
     """Gets PNG and TIF image paths specified by the glob.
 
   Args:
@@ -445,8 +446,8 @@ def get_images_from_glob(glob, max_images):
   Returns:
     List of string of image paths.
   """
-    logging.info('Finding files for glob %s', glob)
-    paths = glob.glob(glob)
+    logging.info('Finding files for glob %s', pathnames)
+    paths = glob.glob(pathnames)
 
     # Filter out paths that are not PNG or TIF.
     filtered_paths = []

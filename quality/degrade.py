@@ -31,7 +31,7 @@ import os
 
 import numpy
 import png
-import scipy
+import scipy.signal
 
 import dataset_creation
 

@@ -26,7 +26,7 @@ import os
 import sys
 
 import PIL
-import numpy as np
+import numpy
 import png
 import skimage.external.tifffile
 import tensorflow
@@ -84,16 +84,16 @@ def patch_values_to_mask(values, patch_width):
   Raises:
     ValueError: If the input values are invalid.
   """
-    if values.dtype != np.uint16 or len(values.shape) != 2:
+    if values.dtype != numpy.uint16 or len(values.shape) != 2:
         logging.info('dtype: %s shape: %s', values.dtype, values.shape)
         raise ValueError('Input must be a 2D np.uint16 array.')
 
     patches_per_column = values.shape[0]
     patches_per_row = values.shape[1]
 
-    mask = np.zeros(
+    mask = numpy.zeros(
         (patches_per_column * patch_width, patches_per_row * patch_width),
-        dtype=np.uint16)
+        dtype=numpy.uint16)
 
     for i in range(patches_per_column):
         for j in range(patches_per_row):
@@ -156,7 +156,7 @@ def save_masks_and_annotated_visualization(orig_name,
         x_pad = output_width - im.shape[1]
         pad_size = ((0, y_pad), (0, x_pad)) if is_greyscale_mask else (
             (0, y_pad), (0, x_pad), (0, 0))
-        im_padded = np.pad(im, pad_size, 'constant')
+        im_padded = numpy.pad(im, pad_size, 'constant')
 
         if not is_greyscale_mask:
             img = PIL.Image.fromarray(im_padded)
@@ -176,7 +176,7 @@ def save_masks_and_annotated_visualization(orig_name,
     output_path = (os.path.join(output_directory, visualized_image_name) %
                    (np_labels[0], prediction, certainties['mean']))
 
-    annotated_visualization = np.squeeze(
+    annotated_visualization = numpy.squeeze(
         evaluation.visualize_image_predictions(
             np_images,
             np_probabilities,
@@ -191,9 +191,9 @@ def save_masks_and_annotated_visualization(orig_name,
 
     def save_mask_from_patch_values(values, mask_format):
         """Convert patch values to mask, pad and save."""
-        if np.min(values) < 0 or np.max(values) > np.iinfo(np.uint16):
+        if numpy.min(values) < 0 or numpy.max(values) > numpy.iinfo(numpy.uint16):
             raise ValueError('Mask value out of bounds.')
-        values = values.astype(np.uint16)
+        values = values.astype(numpy.uint16)
         reshaped_values = values.reshape((image_height / patch_width,
                                           image_width / patch_width))
         mask = patch_values_to_mask(reshaped_values, patch_width)
@@ -203,15 +203,15 @@ def save_masks_and_annotated_visualization(orig_name,
 
     # Create, pad and save masks.
     certainties = evaluation.certainties_from_probabilities(np_probabilities)
-    certainties = np.round(certainties *
-                           np.iinfo(np.uint16).max).astype(np.uint16)
+    certainties = numpy.round(certainties *
+                              numpy.iinfo(numpy.uint16).max).astype(numpy.uint16)
     save_mask_from_patch_values(certainties, constants.CERTAINTY_MASK_FORMAT)
 
-    predictions = np.argmax(np_probabilities, 1)
+    predictions = numpy.argmax(np_probabilities, 1)
     save_mask_from_patch_values(predictions, constants.PREDICTIONS_MASK_FORMAT)
 
-    valid_pixel_regions = np.ones(
-        predictions.shape, dtype=np.uint16) * np.iinfo(np.uint16).max
+    valid_pixel_regions = numpy.ones(
+        predictions.shape, dtype=numpy.uint16) * numpy.iinfo(numpy.uint16).max
     save_mask_from_patch_values(valid_pixel_regions, constants.VALID_MASK_FORMAT)
 
 
@@ -261,16 +261,16 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
 
             if i == 0:
                 patch_probabilities = np_probabilities
-                aggregate_probabilities = np.expand_dims(probabilities_i, 0)
+                aggregate_probabilities = numpy.expand_dims(probabilities_i, 0)
                 orig_names = []
                 all_certainties = {}
                 for k in evaluation.CERTAINTY_TYPES.values():
                     all_certainties[k] = []
             else:
-                patch_probabilities = np.concatenate((patch_probabilities,
-                                                      np_probabilities), 0)
-                aggregate_probabilities = np.concatenate(
-                    (aggregate_probabilities, np.expand_dims(probabilities_i, 0)))
+                patch_probabilities = numpy.concatenate((patch_probabilities,
+                                                         np_probabilities), 0)
+                aggregate_probabilities = numpy.concatenate(
+                    (aggregate_probabilities, numpy.expand_dims(probabilities_i, 0)))
             orig_names.append(orig_name)
             for k, v in certainties.items():
                 all_certainties[k].append(v)
@@ -278,7 +278,7 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
             aggregate_labels.append(np_labels[0])
             patch_labels += list(np_labels)
 
-        aggregate_predictions = list(np.argmax(aggregate_probabilities, 1))
+        aggregate_predictions = list(numpy.argmax(aggregate_probabilities, 1))
         logging.info('Inference output to %s.', output_directory)
 
         logging.info('Done evaluating model.')
@@ -291,7 +291,7 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
 
         # If we're not sharding, save out accuracy statistics.
         if num_shards == 1:
-            save_confusion = not np.any(aggregate_labels < 0)
+            save_confusion = not numpy.any(aggregate_labels < 0)
             evaluation.save_result_plots(aggregate_probabilities, aggregate_labels,
                                          save_confusion, output_directory,
                                          patch_probabilities, patch_labels)
@@ -348,9 +348,9 @@ def main(_):
     image_size = dataset_creation.image_size_from_glob(image_globs_list[0],
                                                        FLAGS.model_patch_width)
     if FLAGS.image_width is not None and FLAGS.image_height is not None:
-        image_width = int(FLAGS.model_patch_width * np.floor(
+        image_width = int(FLAGS.model_patch_width * numpy.floor(
             FLAGS.image_width / FLAGS.model_patch_width))
-        image_height = int(FLAGS.model_patch_width * np.floor(
+        image_height = int(FLAGS.model_patch_width * numpy.floor(
             FLAGS.image_height / FLAGS.model_patch_width))
 
         if image_width > image_size.width or image_height > image_size.height:
