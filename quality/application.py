@@ -1,3 +1,4 @@
+import logging
 import os
 
 import click
@@ -8,9 +9,8 @@ import quality.data_provider
 import quality.dataset_creation
 import quality.evaluation
 import quality.miq
+import quality.summarize
 import quality.validation
-from quality import dataset_creation, data_provider, miq
-from quality.training import FLAGS
 
 _MAX_IMAGES_TO_VALIDATE = 1e6
 
@@ -118,7 +118,6 @@ def evaluate(images, checkpoint, output, patch_width):
         )
 
 
-# flags.DEFINE_string('data_globs', None, 'Comma-separated string of globs, one per class.')
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))
 def fit(images):
@@ -129,10 +128,10 @@ def fit(images):
 
     output_tfrecord_file_pattern = ('worker%g_' % 0) + 'data_%s.tfrecord'
 
-    image_size = dataset_creation.image_size_from_glob(images[0], 84)
+    image_size = quality.dataset_creation.image_size_from_glob(images[0], 84)
 
     # Read images and convert to TFExamples in an TFRecord.
-    dataset_creation.dataset_to_examples_in_tfrecord(
+    quality.dataset_creation.dataset_to_examples_in_tfrecord(
         images,
         "/tmp/quality-fit/",
         output_tfrecord_file_pattern % 'train',
@@ -151,7 +150,7 @@ def fit(images):
         # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
         # across the different devices.
         with tensorflow.device(tensorflow.train.replica_device_setter(0)):
-            images, one_hot_labels, _, _ = data_provider.provide_data(
+            images, one_hot_labels, _, _ = quality.data_provider.provide_data(
                 tfexamples_tfrecord_file_pattern,
                 split_name='train',
                 batch_size=64,
@@ -166,7 +165,7 @@ def fit(images):
             # slim.summaries.add_histogram_summaries([images, labels])
 
             # Define the model:
-            logits = miq.miq_model(
+            logits = quality.miq.miq_model(
                 images=images,
                 num_classes=num_classes,
                 is_training=True,
@@ -174,7 +173,7 @@ def fit(images):
             )
 
             # Specify the loss function:
-            miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
+            quality.miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
             total_loss = tensorflow.losses.get_total_loss()
             tensorflow.summary.scalar('Total_Loss', total_loss)
 
@@ -201,6 +200,37 @@ def fit(images):
 @command.command()
 def predict():
     pass
+
+
+@command.command()
+@click.argument("experiments", type=click.Path(exists=True))
+def summarize(experiments):
+    if experiments is None:
+        logging.fatal('Experiment directory required.')
+
+    probabilities, labels, certainties, orig_names, predictions = quality.evaluation.load_inference_results(experiments)
+
+    if not predictions:
+        logging.fatal('No inference output found at %s.', experiments)
+
+    quality.summarize.check_image_count_matches(experiments, len(predictions))
+
+    output_path = os.path.join(experiments, 'summary')
+
+    if not os.path.isdir(output_path):
+        os.makedirs(output_path)
+
+    # Less useful plots go here.
+    output_path_all_plots = os.path.join(output_path, 'additional_plots')
+
+    if not os.path.isdir(output_path_all_plots):
+        os.makedirs(output_path_all_plots)
+
+    quality.summarize.save_histograms_scatter_plots_and_csv(probabilities, labels, certainties, orig_names, predictions, output_path, output_path_all_plots)
+
+    quality.summarize.save_summary_montages(probabilities, certainties, orig_names, predictions, experiments, output_path, output_path_all_plots)
+
+    logging.info('Done summarizing results at %s', output_path)
 
 
 # $ quality validate tests/data/images_for_glob_test/*.tif --width 100 --height 100

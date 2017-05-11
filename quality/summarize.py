@@ -17,7 +17,6 @@ import matplotlib
 import matplotlib.pyplot
 import numpy
 import skimage.io
-import tensorflow
 
 import constants
 import evaluation
@@ -25,13 +24,6 @@ import evaluation
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 matplotlib.use('Agg')
-
-flags = tensorflow.app.flags
-
-flags.DEFINE_string('experiment_directory', None,
-                    'Directory of inference .csv and .png outputs')
-
-FLAGS = flags.FLAGS
 
 # Thickness of prediction border annotation, as fraction of image height.
 _BORDER_FRACTION = 0.08
@@ -504,39 +496,3 @@ def save_summary_montages(probabilities,
             plot_most_least_certain(certainties[certainty], certainty)
 
     logging.info('Done saving summary montages.')
-
-
-def main(_):
-    if FLAGS.experiment_directory is None:
-        logging.fatal('Experiment directory required.')
-
-    (probabilities, labels, certainties, orig_names,
-     predictions) = evaluation.load_inference_results(FLAGS.experiment_directory)
-
-    if not predictions:
-        logging.fatal('No inference output found at %s.',
-                      FLAGS.experiment_directory)
-
-    check_image_count_matches(FLAGS.experiment_directory, len(predictions))
-
-    output_path = os.path.join(FLAGS.experiment_directory, 'summary')
-    if not os.path.isdir(output_path):
-        os.makedirs(output_path)
-
-    # Less useful plots go here.
-    output_path_all_plots = os.path.join(output_path, 'additional_plots')
-    if not os.path.isdir(output_path_all_plots):
-        os.makedirs(output_path_all_plots)
-
-    save_histograms_scatter_plots_and_csv(probabilities, labels, certainties,
-                                          orig_names, predictions, output_path,
-                                          output_path_all_plots)
-
-    save_summary_montages(probabilities, certainties, orig_names, predictions,
-                          FLAGS.experiment_directory, output_path,
-                          output_path_all_plots)
-    logging.info('Done summarizing results at %s', output_path)
-
-
-if __name__ == '__main__':
-    tensorflow.app.run()
