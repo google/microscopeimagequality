@@ -23,7 +23,7 @@ import evaluation
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 
 # Thickness of prediction border annotation, as fraction of image height.
 _BORDER_FRACTION = 0.08

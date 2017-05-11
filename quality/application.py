@@ -24,7 +24,7 @@ def command():
 
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))
-@click.option("--checkpoint", type=click.Path(exists=True))
+@click.option("--checkpoint", type=click.Path())
 @click.option("--output", type=click.Path())
 @click.option("--patch-width", default=84)
 def evaluate(images, checkpoint, output, patch_width):
@@ -201,7 +201,7 @@ def fit(images):
 
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))
-@click.option("--checkpoint", type=click.Path(exists=True))
+@click.option("--checkpoint", type=click.Path())
 @click.option("--height", type=int)
 @click.option("--output", type=click.Path())
 @click.option("--patch-width", default=84)
@@ -220,12 +220,10 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
     if not os.path.isdir(output):
         os.makedirs(output)
 
-    image_globs_list = images.split(',')
-
     use_unlabeled_data = True
 
     # Input images will be cropped to image_height x image_width.
-    image_size = quality.dataset_creation.image_size_from_glob(image_globs_list[0], patch_width)
+    image_size = quality.dataset_creation.image_size_from_glob(images[0], patch_width)
 
     if width is not None and height is not None:
         image_width = int(patch_width * numpy.floor(width / patch_width))
@@ -244,7 +242,7 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
 
     logging.info('Using batch_size=%d for image_width=%d, image_height=%d, model_patch_width=%d', batch_size, image_width, image_height, patch_width)
 
-    tfexamples_tfrecord = quality.inference.build_tfrecord_from_pngs(image_globs_list, use_unlabeled_data, 11, output, 0.0, 1.0, 1, 1, image_width, image_height)
+    tfexamples_tfrecord = quality.inference.build_tfrecord_from_pngs(images, use_unlabeled_data, 11, output, 0.0, 1.0, 1, 1, image_width, image_height)
 
     num_samples = quality.data_provider.get_num_records(tfexamples_tfrecord % quality.inference._SPLIT_NAME)
 
