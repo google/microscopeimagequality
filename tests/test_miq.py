@@ -3,8 +3,6 @@ import tensorflow.contrib.slim
 
 import quality.miq
 
-FLAGS = tensorflow.app.flags.FLAGS
-
 
 class MiqTest(tensorflow.test.TestCase):
     def test_add_loss_training_runs(self):

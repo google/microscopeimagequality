@@ -7,8 +7,6 @@ import tensorflow
 
 import quality.dataset_creation
 
-FLAGS = tensorflow.app.flags.FLAGS
-
 
 class Creation(unittest.TestCase):
     def setUp(self):

@@ -9,8 +9,6 @@ import tensorflow.contrib.slim
 
 import quality.data_provider
 
-FLAGS = tensorflow.app.flags.FLAGS
-
 TFRECORD_NUM_ENTRIES = 33
 TFRECORD_NUM_CLASSES = 3
 TFRECORD_LABEL_ORDERING = [

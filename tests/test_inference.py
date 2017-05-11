@@ -11,8 +11,6 @@ import quality.data_provider
 import quality.evaluation
 import quality.inference
 
-FLAGS = tensorflow.app.flags.FLAGS
-
 
 class Inference(tensorflow.test.TestCase):
     def setUp(self):

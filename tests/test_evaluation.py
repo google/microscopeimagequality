@@ -8,8 +8,6 @@ import tensorflow.contrib.slim
 
 import quality.evaluation
 
-FLAGS = tensorflow.app.flags.FLAGS
-
 
 class Evaluation(tensorflow.test.TestCase):
     def setUp(self):

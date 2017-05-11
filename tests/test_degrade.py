@@ -8,8 +8,6 @@ import tensorflow
 import quality.dataset_creation
 import quality.degrade
 
-FLAGS = tensorflow.app.flags.FLAGS
-
 
 class Degrade(unittest.TestCase):
     def setUp(self):

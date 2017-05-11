@@ -1,11 +1,7 @@
 import os
 import unittest
 
-import tensorflow
-
 import quality.validation
-
-FLAGS = tensorflow.app.flags.FLAGS
 
 
 class Validation(unittest.TestCase):
