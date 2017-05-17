@@ -17,9 +17,9 @@ import numpy
 import skimage.io
 import tensorflow
 
-import constants
-import dataset_creation
-import evaluation
+import quality.constants
+import quality.dataset_creation
+import quality.evaluation
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
@@ -120,12 +120,12 @@ def save_masks_and_annotated_visualization(orig_name,
 
     orig_name_png = os.path.splitext(os.path.basename(orig_name))[0] + '.png'
     visualized_image_name = ('actual%g_pred%g_mean_certainty=%0.3f' +
-                             (constants.ORIG_IMAGE_FORMAT % orig_name_png))
+                             (quality.constants.ORIG_IMAGE_FORMAT % orig_name_png))
     output_path = (os.path.join(output_directory, visualized_image_name) %
                    (np_labels[0], prediction, certainties['mean']))
 
     annotated_visualization = numpy.squeeze(
-        evaluation.visualize_image_predictions(
+        quality.evaluation.visualize_image_predictions(
             np_images,
             np_probabilities,
             np_labels,
@@ -150,17 +150,17 @@ def save_masks_and_annotated_visualization(orig_name,
                                         mask_format % orig_name_png))
 
     # Create, pad and save masks.
-    certainties = evaluation.certainties_from_probabilities(np_probabilities)
+    certainties = quality.evaluation.certainties_from_probabilities(np_probabilities)
     certainties = numpy.round(certainties *
                               numpy.iinfo(numpy.uint16).max).astype(numpy.uint16)
-    save_mask_from_patch_values(certainties, constants.CERTAINTY_MASK_FORMAT)
+    save_mask_from_patch_values(certainties, quality.constants.CERTAINTY_MASK_FORMAT)
 
     predictions = numpy.argmax(np_probabilities, 1)
-    save_mask_from_patch_values(predictions, constants.PREDICTIONS_MASK_FORMAT)
+    save_mask_from_patch_values(predictions, quality.constants.PREDICTIONS_MASK_FORMAT)
 
     valid_pixel_regions = numpy.ones(
         predictions.shape, dtype=numpy.uint16) * numpy.iinfo(numpy.uint16).max
-    save_mask_from_patch_values(valid_pixel_regions, constants.VALID_MASK_FORMAT)
+    save_mask_from_patch_values(valid_pixel_regions, quality.constants.VALID_MASK_FORMAT)
 
 
 def run_model_inference(model_ckpt_file, probabilities, labels, images,
@@ -195,7 +195,7 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
              np_image_paths] = sess.run([probabilities, labels, images, image_paths])
 
             (prediction, certainties,
-             probabilities_i) = evaluation.aggregate_prediction_from_probabilities(
+             probabilities_i) = quality.evaluation.aggregate_prediction_from_probabilities(
                 np_probabilities, aggregation_method)
 
             # Each name must be unique since all workers write to same directory.
@@ -212,7 +212,7 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
                 aggregate_probabilities = numpy.expand_dims(probabilities_i, 0)
                 orig_names = []
                 all_certainties = {}
-                for k in evaluation.CERTAINTY_TYPES.values():
+                for k in quality.evaluation.CERTAINTY_TYPES.values():
                     all_certainties[k] = []
             else:
                 patch_probabilities = numpy.concatenate((patch_probabilities,
@@ -233,14 +233,14 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
 
         output_file = (os.path.join(output_directory, 'results-%05d-of-%05d.csv') %
                        (shard_num, num_shards))
-        evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
+        quality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
                                           all_certainties, orig_names,
                                           aggregate_predictions, output_file)
 
         # If we're not sharding, save out accuracy statistics.
         if num_shards == 1:
             save_confusion = not numpy.any(aggregate_labels < 0)
-            evaluation.save_result_plots(aggregate_probabilities, aggregate_labels,
+            quality.evaluation.save_result_plots(aggregate_probabilities, aggregate_labels,
                                          save_confusion, output_directory,
                                          patch_probabilities, patch_labels)
         logging.info('Stopping threads')
@@ -258,7 +258,7 @@ def build_tfrecord_from_pngs(image_globs_list, use_unlabeled_data, num_classes,
     # Generate a local TFRecord
     tfrecord_file_pattern = _TFRECORD_FILE_PATTERN % ('%s', shard_num, num_shards)
 
-    num_samples_converted = dataset_creation.dataset_to_examples_in_tfrecord(
+    num_samples_converted = quality.dataset_creation.dataset_to_examples_in_tfrecord(
         list_of_image_globs=image_globs_list,
         output_directory=eval_directory,
         output_tfrecord_filename=tfrecord_file_pattern % _SPLIT_NAME,

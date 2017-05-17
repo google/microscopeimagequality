@@ -32,7 +32,7 @@ import tensorflow
 import tensorflow.contrib.slim
 import tensorflow.python.ops
 
-import miq
+import quality.miq
 
 _IMAGE_ANNOTATION_MAGNIFICATION_PERCENT = 800
 CERTAINTY_NAMES = ['mean', 'max', 'aggregate', 'weighted']
@@ -587,7 +587,7 @@ def get_model_and_metrics(images,
     A ModelAndMetrics object.
   """
     # Define the model:
-    logits = miq.miq_model(
+    logits = quality.miq.miq_model(
         images,
         num_classes=num_classes,
         is_training=is_training,

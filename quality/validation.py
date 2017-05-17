@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 
-import dataset_creation
+import quality.dataset_creation
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
@@ -51,7 +51,7 @@ def check_image_dimensions(image_paths, image_height, image_width):
 
     for path in image_paths:
         logging.info('Trying to read image %s', path)
-        image = dataset_creation.read_16_bit_greyscale(path)
+        image = quality.dataset_creation.read_16_bit_greyscale(path)
 
         if image.shape[0] < image_height or image.shape[1] < image_width:
             bad_images.append(path)
