@@ -94,20 +94,13 @@ def save_masks_and_annotated_visualization(orig_name,
     ValueError: If the image to annotate cannot be found or opened.
   """
 
-    # import IPython
-    # IPython.embed()
-
     orig_name = orig_name.decode("utf-8")
 
     if not os.path.isfile(orig_name):
         raise ValueError('File for annotating does not exist: %s.' % orig_name)
-    file_extension = os.path.splitext(orig_name)[1]
-    if file_extension == '.png':
-        output_height, output_width = skimage.io.imread(orig_name).shape
-    elif file_extension == '.tif':
-        output_height, output_width = skimage.io.imread(orig_name).shape
-    else:
-        raise ValueError('Unsupported file extension %s', file_extension)
+
+    output_height, output_width = skimage.io.imread(orig_name).shape
+
     logging.info('Original image size %d x %d', output_height, output_width)
 
     def pad_and_save_image(im, image_output_path):

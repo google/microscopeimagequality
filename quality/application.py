@@ -211,7 +211,7 @@ def fit(images, output):
 
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))
-@click.option("--checkpoint", type=click.STRING)
+@click.option("--checkpoint", type=click.Path())
 @click.option("--height", type=int)
 @click.option("--output", type=click.Path())
 @click.option("--patch-width", default=84)
