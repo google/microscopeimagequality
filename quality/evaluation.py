@@ -421,16 +421,14 @@ def _patches_to_image(patches, image_shape):
                          str(patches.shape))
     num_patches = patches.shape[0]
     patch_width = patches.shape[1]
-    num_rows = image_shape[0] / patch_width
-    num_cols = image_shape[1] / patch_width
+    num_rows = image_shape[0] // patch_width
+    num_cols = image_shape[1] // patch_width
 
     if num_rows * num_cols != num_patches:
         raise ValueError('image_shape %s not valid for %d %dx%d patches.' %
                          (str(image_shape), num_patches, patch_width, patch_width))
 
-    image = numpy.zeros(
-        [num_rows * patch_width, num_cols * patch_width, patches.shape[3]],
-        dtype=patches.dtype)
+    image = numpy.zeros([num_rows * patch_width, num_cols * patch_width, patches.shape[3]], dtype=patches.dtype)
 
     index = 0
     for i in range(0, num_rows * patch_width, patch_width):
@@ -811,4 +809,4 @@ def save_prediction_histogram(predictions, save_path, num_classes, log=False):
     matplotlib.pyplot.ylabel('image count')
     matplotlib.pyplot.xlabel('predicted class')
     matplotlib.pyplot.grid('off')
-    matplotlib.pyplot.savefig(open(save_path, 'w'), bbox_inches='tight')
+    matplotlib.pyplot.savefig(save_path, bbox_inches='tight')

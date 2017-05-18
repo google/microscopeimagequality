@@ -9,7 +9,7 @@ import tensorflow
 import quality.data_provider
 import quality.dataset_creation
 import quality.evaluation
-import quality.inference
+import quality.prediction
 import quality.miq
 import quality.summarize
 import quality.validation
@@ -122,9 +122,10 @@ def evaluate(images, checkpoint, output, patch_width):
 
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))
-def fit(images):
-    if not os.path.exists("/tmp/quality-fit/"):
-        os.makedirs("/tmp/quality-fit/")
+@click.option("--output", nargs=1, type=click.Path())
+def fit(images, output):
+    if not os.path.exists(output):
+        os.makedirs(output)
 
     num_classes = len(images)
 
@@ -135,7 +136,7 @@ def fit(images):
     # Read images and convert to TFExamples in an TFRecord.
     quality.dataset_creation.dataset_to_examples_in_tfrecord(
         images,
-        "/tmp/quality-fit/",
+        output,
         output_tfrecord_file_pattern % 'train',
         num_classes,
         image_width=image_size.width,
@@ -143,9 +144,18 @@ def fit(images):
         image_background_value=0.0
     )
 
-    tfexamples_tfrecord_file_pattern = os.path.join("/tmp/quality-fit/", output_tfrecord_file_pattern)
+    tfexamples_tfrecord_file_pattern = os.path.join(output, output_tfrecord_file_pattern)
 
     graph = tensorflow.Graph()
+
+    # builder = tensorflow.saved_model.builder.SavedModelBuilder("/tmp/quality-fit/")
+    #
+    # with tf.Session(graph=tf.Graph()) as sess:
+    #     ...
+    #     builder.add_meta_graph_and_variables(sess,
+    #                                          ["foo-tag"],
+    #                                          signature_def_map=foo_signatures,
+    #                                          assets_collection=foo_assets)
 
     with graph.as_default():
         # If ps_tasks is zero, the local device is used. When using multiple
@@ -191,9 +201,9 @@ def fit(images):
             # Run training.
             tensorflow.contrib.slim.learning.train(
                 train_op=train_op,
-                logdir="/tmp/quality-fit/",
+                logdir=output,
                 is_chief=0 == 0,
-                number_of_steps=20000,
+                number_of_steps=10,
                 save_summaries_secs=15,
                 save_interval_secs=60
             )
@@ -201,7 +211,7 @@ def fit(images):
 
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))
-@click.option("--checkpoint", type=click.Path())
+@click.option("--checkpoint", type=click.STRING)
 @click.option("--height", type=int)
 @click.option("--output", type=click.Path())
 @click.option("--patch-width", default=84)
@@ -242,9 +252,9 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
 
     logging.info('Using batch_size=%d for image_width=%d, image_height=%d, model_patch_width=%d', batch_size, image_width, image_height, patch_width)
 
-    tfexamples_tfrecord = quality.inference.build_tfrecord_from_pngs(images, use_unlabeled_data, 11, output, 0.0, 1.0, 1, 1, image_width, image_height)
+    tfexamples_tfrecord = quality.prediction.build_tfrecord_from_pngs(images, use_unlabeled_data, 11, output, 0.0, 1.0, 1, 1, image_width, image_height)
 
-    num_samples = quality.data_provider.get_num_records(tfexamples_tfrecord % quality.inference._SPLIT_NAME)
+    num_samples = quality.data_provider.get_num_records(tfexamples_tfrecord % quality.prediction._SPLIT_NAME)
 
     logging.info('TFRecord has %g samples.', num_samples)
 
@@ -259,7 +269,7 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
             num_threads=1,
             patch_width=patch_width,
             randomize=False,
-            split_name=quality.inference._SPLIT_NAME,
+            split_name=quality.prediction._SPLIT_NAME,
             tfrecord_file_pattern=tfexamples_tfrecord
         )
 
@@ -271,7 +281,7 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
             one_hot_labels=one_hot_labels
         )
 
-        quality.inference.run_model_inference(
+        quality.prediction.run_model_inference(
             aggregation_method=quality.evaluation.METHOD_AVERAGE,
             image_height=image_height,
             image_paths=image_paths,
@@ -289,7 +299,7 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
         )
 
     # Delete TFRecord to save disk space.
-    tfrecord_path = tfexamples_tfrecord % quality.inference._SPLIT_NAME
+    tfrecord_path = tfexamples_tfrecord % quality.prediction._SPLIT_NAME
 
     os.remove(tfrecord_path)
 

@@ -94,6 +94,11 @@ def save_masks_and_annotated_visualization(orig_name,
     ValueError: If the image to annotate cannot be found or opened.
   """
 
+    # import IPython
+    # IPython.embed()
+
+    orig_name = orig_name.decode("utf-8")
+
     if not os.path.isfile(orig_name):
         raise ValueError('File for annotating does not exist: %s.' % orig_name)
     file_extension = os.path.splitext(orig_name)[1]
@@ -139,15 +144,12 @@ def save_masks_and_annotated_visualization(orig_name,
 
     def save_mask_from_patch_values(values, mask_format):
         """Convert patch values to mask, pad and save."""
-        if numpy.min(values) < 0 or numpy.max(values) > numpy.iinfo(numpy.uint16):
+        if numpy.min(values) < 0 or numpy.max(values) > numpy.iinfo(numpy.uint16).max:
             raise ValueError('Mask value out of bounds.')
         values = values.astype(numpy.uint16)
-        reshaped_values = values.reshape((image_height / patch_width,
-                                          image_width / patch_width))
+        reshaped_values = values.reshape((image_height // patch_width, image_width // patch_width))
         mask = patch_values_to_mask(reshaped_values, patch_width)
-        pad_and_save_image(mask,
-                           os.path.join(output_directory,
-                                        mask_format % orig_name_png))
+        pad_and_save_image(mask, os.path.join(output_directory, mask_format % orig_name_png))
 
     # Create, pad and save masks.
     certainties = quality.evaluation.certainties_from_probabilities(np_probabilities)
@@ -163,7 +165,7 @@ def save_masks_and_annotated_visualization(orig_name,
     save_mask_from_patch_values(valid_pixel_regions, quality.constants.VALID_MASK_FORMAT)
 
 
-def run_model_inference(model_ckpt_file, probabilities, labels, images,
+def run_model_inference( model_ckpt_file, probabilities, labels, images,
                         output_directory, image_paths, num_samples,
                         image_height, image_width, show_plots, shard_num,
                         num_shards, patch_width, aggregation_method):
@@ -184,6 +186,7 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
     saver = tensorflow.train.Saver()
     with tensorflow.Session() as sess:
         logging.info('Restoring checkpoint %s', model_ckpt_file)
+
         saver.restore(sess, model_ckpt_file)
         coord = tensorflow.train.Coordinator()
         threads = tensorflow.train.start_queue_runners(sess=sess, coord=coord)
@@ -191,21 +194,15 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
 
         for i in range(num_samples):
             logging.info('Running inference on sample  %d.', i)
-            [np_probabilities, np_labels, np_images,
-             np_image_paths] = sess.run([probabilities, labels, images, image_paths])
 
-            (prediction, certainties,
-             probabilities_i) = quality.evaluation.aggregate_prediction_from_probabilities(
-                np_probabilities, aggregation_method)
+            [np_probabilities, np_labels, np_images, np_image_paths] = sess.run([probabilities, labels, images, image_paths])
+
+            (prediction, certainties, probabilities_i) = quality.evaluation.aggregate_prediction_from_probabilities(np_probabilities, aggregation_method)
 
             # Each name must be unique since all workers write to same directory.
-            orig_name = np_image_paths[0][0] if np_image_paths[0][0] else (
-                'not_available_%03d_%07d.png' % shard_num, i)
+            orig_name = np_image_paths[0][0] if np_image_paths[0][0] else ('not_available_%03d_%07d.png' % shard_num, i)
 
-            save_masks_and_annotated_visualization(
-                orig_name, output_directory, prediction, certainties, np_images,
-                np_probabilities, np_labels, patch_width, image_height, image_width,
-                show_plots)
+            save_masks_and_annotated_visualization(orig_name, output_directory, prediction, certainties, np_images, np_probabilities, np_labels, patch_width, image_height, image_width, show_plots)
 
             if i == 0:
                 patch_probabilities = np_probabilities
@@ -219,33 +216,38 @@ def run_model_inference(model_ckpt_file, probabilities, labels, images,
                                                          np_probabilities), 0)
                 aggregate_probabilities = numpy.concatenate(
                     (aggregate_probabilities, numpy.expand_dims(probabilities_i, 0)))
+
             orig_names.append(orig_name)
+
             for k, v in certainties.items():
                 all_certainties[k].append(v)
 
             aggregate_labels.append(np_labels[0])
+
             patch_labels += list(np_labels)
 
         aggregate_predictions = list(numpy.argmax(aggregate_probabilities, 1))
+
         logging.info('Inference output to %s.', output_directory)
 
         logging.info('Done evaluating model.')
 
-        output_file = (os.path.join(output_directory, 'results-%05d-of-%05d.csv') %
-                       (shard_num, num_shards))
-        quality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
-                                          all_certainties, orig_names,
-                                          aggregate_predictions, output_file)
+        output_file = (os.path.join(output_directory, 'results-%05d-of-%05d.csv') % (shard_num, num_shards))
+
+        quality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels, all_certainties, orig_names, aggregate_predictions, output_file)
 
         # If we're not sharding, save out accuracy statistics.
         if num_shards == 1:
-            save_confusion = not numpy.any(aggregate_labels < 0)
-            quality.evaluation.save_result_plots(aggregate_probabilities, aggregate_labels,
-                                         save_confusion, output_directory,
-                                         patch_probabilities, patch_labels)
+            save_confusion = not numpy.any(numpy.asarray(aggregate_labels) < 0)
+
+            quality.evaluation.save_result_plots(aggregate_probabilities, aggregate_labels, save_confusion, output_directory, patch_probabilities, patch_labels)
+
         logging.info('Stopping threads')
+
         coord.request_stop()
+
         coord.join(threads)
+
         logging.info('Threads stopped')
 
 

@@ -329,7 +329,8 @@ def generate_tf_example(image, label, image_path):
         (label.flatten().tolist()))
 
     features.feature[quality.data_provider.FEATURE_IMAGE_PATH].bytes_list.value.append(
-        image_path)
+        str.encode(image_path)
+    )
 
     return example
 

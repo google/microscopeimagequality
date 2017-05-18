@@ -9,7 +9,7 @@ import tensorflow
 import quality.constants
 import quality.data_provider
 import quality.evaluation
-import quality.inference
+import quality.prediction
 
 
 class Inference(tensorflow.test.TestCase):
@@ -28,7 +28,7 @@ class Inference(tensorflow.test.TestCase):
         values = numpy.round(
             numpy.array([[0.2, 0.4, 0.5], [1.0, 0.0, 0.3]]) *
             numpy.iinfo(numpy.uint16).max).astype(numpy.uint16)
-        mask = quality.inference.patch_values_to_mask(values, self.patch_width)
+        mask = quality.prediction.patch_values_to_mask(values, self.patch_width)
         self.assertEquals((168, 252), mask.shape)
         self.assertEquals(numpy.iinfo(numpy.uint16).max, numpy.max(mask))
 
@@ -50,7 +50,7 @@ class Inference(tensorflow.test.TestCase):
         image_height = int(numpy.sqrt(num_patches)) * self.patch_width
         image_width = image_height
 
-        quality.inference.save_masks_and_annotated_visualization(
+        quality.prediction.save_masks_and_annotated_visualization(
             orig_name, self.test_dir, prediction, certainties, np_images,
             np_probabilities, np_labels, self.patch_width, image_height,
             image_width)
@@ -97,7 +97,7 @@ class Inference(tensorflow.test.TestCase):
 
         np_labels = 2 * numpy.ones(num_patches)
 
-        quality.inference.save_masks_and_annotated_visualization(
+        quality.prediction.save_masks_and_annotated_visualization(
             orig_name, self.test_dir, prediction, certainties, np_images,
             np_probabilities, np_labels, self.patch_width, image_height,
             image_width)
@@ -119,7 +119,7 @@ class Inference(tensorflow.test.TestCase):
         image_width = 84
         image_height = 84
 
-        tfexamples_tfrecord = quality.inference.build_tfrecord_from_pngs(
+        tfexamples_tfrecord = quality.prediction.build_tfrecord_from_pngs(
             [self.glob_images],
             use_unlabeled_data=True,
             num_classes=num_classes,
@@ -132,7 +132,7 @@ class Inference(tensorflow.test.TestCase):
             image_height=image_height)
 
         num_samples = quality.data_provider.get_num_records(tfexamples_tfrecord %
-                                                            quality.inference._SPLIT_NAME)
+                                                            quality.prediction._SPLIT_NAME)
 
         logging.info('TFRecord has %g samples.', num_samples)
 
@@ -140,7 +140,7 @@ class Inference(tensorflow.test.TestCase):
         with g.as_default():
             images, one_hot_labels, _, _ = quality.data_provider.provide_data(
                 tfexamples_tfrecord,
-                split_name=quality.inference._SPLIT_NAME,
+                split_name=quality.prediction._SPLIT_NAME,
                 batch_size=batch_size,
                 num_classes=num_classes,
                 image_width=84,
