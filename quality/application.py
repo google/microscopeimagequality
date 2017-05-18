@@ -84,8 +84,8 @@ def evaluate(images, checkpoint, output, patch_width):
 
         metrics = {
             'Accuracy': tensorflow.contrib.metrics.streaming_accuracy(predictions, labels),
-            'Mean Loss': tensorflow.contrib.metrics.streaming_mean(loss),
-            'Aggregated Accuracy': tensorflow.contrib.metrics.streaming_accuracy(aggregated_prediction, aggregated_label),
+            'Mean_Loss': tensorflow.contrib.metrics.streaming_mean(loss),
+            'Aggregated_Accuracy': tensorflow.contrib.metrics.streaming_accuracy(aggregated_prediction, aggregated_label),
         }
 
         names_to_values, names_to_updates = tensorflow.contrib.slim.metrics.aggregate_metric_map(metrics)
@@ -93,10 +93,10 @@ def evaluate(images, checkpoint, output, patch_width):
         for name, value in six.iteritems(names_to_values):
             tensorflow.summary.scalar(name, value)
 
-        tensorflow.summary.histogram("eval" + ' images', images)
-        tensorflow.summary.histogram("eval" + ' labels', labels)
-        tensorflow.summary.histogram("eval" + ' predictions', predictions)
-        tensorflow.summary.histogram("eval" + ' probabilities', probabilities)
+        tensorflow.summary.histogram("eval_images", images)
+        tensorflow.summary.histogram("eval_labels", labels)
+        tensorflow.summary.histogram("eval_predictions", predictions)
+        tensorflow.summary.histogram("eval_probabilities", probabilities)
 
         quality.evaluation.annotate_classification_errors(
             images,

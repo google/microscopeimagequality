@@ -78,3 +78,21 @@ images, `.png` of `.tif` format, all with the same width and height.
 1. Launch `miq_eval.py` with a held-out test dataset.
 1. Use TensorBoard to view training and eval progress.
 1. When satisfied with model accuracy, save the `model.ckpt` files for later use.
+
+
+```
+quality evaluate \
+	--checkpoint tests/data/checkpoints/model.ckpt-10 \
+	--output tests/data/output \
+	tests/data/training/0/*.tif \
+	tests/data/training/1/*.tif \
+	tests/data/training/2/*.tif \
+	tests/data/training/3/*.tif \
+	tests/data/training/4/*.tif \
+	tests/data/training/5/*.tif \
+	tests/data/training/6/*.tif \
+	tests/data/training/7/*.tif \
+	tests/data/training/8/*.tif \
+	tests/data/training/9/*.tif \
+	tests/data/training/10/*.tif
+```

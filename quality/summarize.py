@@ -197,14 +197,14 @@ def _read_valid_part_of_annotated_image(experiment_path, orig_name):
 
     mask_path = os.path.join(experiment_path, quality.constants.VALID_MASK_FORMAT % orig_name + '.png')
 
-    if not os.path.isdir(mask_path):
-        logging.info('No mask found at %s', mask_path)
-    else:
-        mask = skimage.io.imread(mask_path)
-        # Get the upper-left crop that is valid (where mask > 0).
-        max_valid_row = numpy.argwhere(numpy.sum(mask, 1))[-1]
-        max_valid_column = numpy.argwhere(numpy.sum(mask, 0))[-1]
-        image = image[:max_valid_row, :max_valid_column]
+    # if not os.path.isdir(mask_path):
+    #     logging.info('No mask found at %s', mask_path)
+    # else:
+    mask = skimage.io.imread(mask_path)
+    # Get the upper-left crop that is valid (where mask > 0).
+    max_valid_row = numpy.argwhere(numpy.sum(mask, 1))[-1][0]
+    max_valid_column = numpy.argwhere(numpy.sum(mask, 0))[-1][0]
+    image = image[:max_valid_row, :max_valid_column]
 
     return image
 
@@ -222,9 +222,8 @@ def _save_color_legend(num_classes, path):
 
     probabilities = numpy.identity(num_classes, dtype=numpy.float32)
     probabilities = numpy.tile(probabilities, [num_classes, 1])
-    patch_width = quality.evaluation.BORDER_SIZE / 2
-    patches = numpy.zeros(
-        (num_classes ** 2, patch_width, patch_width, 1), dtype=numpy.float32)
+    patch_width = quality.evaluation.BORDER_SIZE // 2
+    patches = numpy.zeros((num_classes ** 2, patch_width, patch_width, 1), dtype=numpy.float32)
     # Make up some dummy labels.
     labels = [0] * num_classes ** 2
     image_shape = (num_classes * patch_width, num_classes * patch_width)
@@ -350,7 +349,7 @@ def _rank_examples(indices, rank_method, certainties, predictions,
         if 'certainty_most' in rank_method:
             indices = indices[::-1]
         elif 'certainty_least_to_most' in rank_method:
-            stride = indices.shape[0] / num_plots_in_row
+            stride = indices.shape[0] // num_plots_in_row
             indices = indices[:stride * num_plots_in_row:stride]
         elif 'certainty_least' in rank_method:
             pass
@@ -457,7 +456,7 @@ def save_summary_montages(probabilities,
                         continue
                     # Use the approximate median value in the bin.
                     bin_indices = bin_indices[numpy.argsort(bin_certainties)]
-                    index = bin_indices[len(bin_indices) / 2]
+                    index = bin_indices[len(bin_indices) // 2]
                     subplot(num_classes, bins_per_class, 1 + i * bins_per_class + j)
                     plot_image(index, certainties[index])
             if rank_method == 'aggregate_certainty_least_to_most':
