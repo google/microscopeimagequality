@@ -1,12 +1,11 @@
 r"""Aggregate and summarize model inference results.
 
 Requires the prediction-annotated .png images and .csv files from
-run_inference.py. The output is in a 'summary' subdirectory, and includes an
+`quality predict`. The output is in a 'summary' subdirectory, and includes an
 aggregated .csv file and various summary images.
 
 Example usage:
-  python summarize_inference.py \
-     --experiment_directory <path_to_eval_directory>
+  quality summarize <path_to_eval_directory>
 """
 
 import logging

@@ -2,10 +2,10 @@
 Run model inference to annotate input images with patch/image predictions.
 
 Example usage:
-  python quality/run_inference.py \
-    --eval_directory /tmp/ \
-    --model_ckpt_file /path/model.ckpt \
-    --image_globs_list "/images/*"
+  quality predict \
+    --checkpoint /path/model.ckpt \
+    --output /tmp/ \
+    "/images/*"
 
 """
 

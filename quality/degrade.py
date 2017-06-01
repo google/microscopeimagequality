@@ -5,7 +5,7 @@ Example usage:
   To simulate defocus at a depth of 2 microns (for the default imaging
     parameters):
 
-  from simulator import degrade
+  from quality import degrade
   degrade.degrade_images('/path_clean_images/*',
                    '/degraded_image_output/'
                    z_depth_meters=2e-6,

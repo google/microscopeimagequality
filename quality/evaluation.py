@@ -1,14 +1,17 @@
 from __future__ import print_function
 
 """
-Evaluates a trained Miq model. Based on MNIST.
+Evaluates a trained Miq model.
 
 Usage:
-  Start eval loop:
-    python quality/miq_eval.py --data_globs "/focus0/*,/focus1/*,/focus2/*, \
+  Start eval loop, which runs forever, constantly checking for new model
+    checkpoints:
+    
+    quality evaluate --checkpoint <path_to_train_directory> \
+      --output <path_to_train_directory> \
+     "/focus0/*,/focus1/*,/focus2/*, \
       /focus3/*,/focus4/*,/focus5/*,/focus6/*,/focus7/*,/focus8/*,/focus9/*, \
-      /focus10/*" --eval_dir <path_to_train_directory> \
-      --checkpoint_dir <path_to_train_directory>
+      /focus10/*" 
 
   View training progress:
     tensorboard --logdir=<path_to_train_directory>
