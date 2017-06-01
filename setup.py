@@ -9,8 +9,10 @@ setuptools.setup(
     install_requires=[
         "click",
         "matplotlib",
+        "nose",
         "numpy",
         "pillow",
+        "pytest",
         "scikit-image",
         "scipy",
         "six",
