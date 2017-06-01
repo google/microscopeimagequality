@@ -76,8 +76,6 @@ Note: this model checkpoint in the example has only been trained for
 10 steps and will probably make random predictions.
 
 Summarize the prediction results across the entire dataset.
-TODO(samuely): This yields `Unknown file type` error, at least in
-python 2.7.
 ```sh
 quality summarize tests/output/miq_result_images/
 ```

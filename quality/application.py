@@ -6,6 +6,10 @@ import numpy
 import six
 import tensorflow
 
+# Use this backend for producing PNGs without interactive display.
+import matplotlib
+matplotlib.use('Agg')
+
 import quality.data_provider
 import quality.dataset_creation
 import quality.evaluation
