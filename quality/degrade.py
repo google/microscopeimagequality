@@ -24,7 +24,7 @@ import scipy.signal
 import scipy.special
 import skimage.io
 
-import dataset_creation
+import quality.dataset_creation
 
 
 class ImageDegrader(object):
@@ -232,13 +232,13 @@ def degrade_images(images, output_path, z_depth_meters, exposure_factor, random_
 
     degrader = ImageDegrader(random_seed, photoelectron_factor, sensor_offset_in_photoelectrons)
 
-    image_paths = dataset_creation.get_images_from_glob(images, max_images=1e7)
+    image_paths = quality.dataset_creation.get_images_from_glob(images, max_images=1e7)
 
     if not image_paths:
         raise ValueError('No images found with glob %s.' % images)
 
     for path in image_paths:
-        image = dataset_creation.read_16_bit_greyscale(path)
+        image = quality.dataset_creation.read_16_bit_greyscale(path)
         blurred_image = degrader.apply_blur_kernel(image, psf)
         exposure_adjusted_image = degrader.set_exposure(blurred_image, exposure_factor)
 
