@@ -34,5 +34,5 @@ setuptools.setup(
             "tests"
         ]
     ),
-    version="0.1.0dev1"
+    version="0.1.0dev2"
 )
