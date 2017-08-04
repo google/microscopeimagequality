@@ -59,7 +59,7 @@ width and height.
 
 ### How to
 
-Check that all images are of the same dimension:
+(Optional) Confirm that all images are of the same dimension:
 ```sh
  quality validate tests/data/images_for_glob_test/*.tif --width 100 --height 100
 ```
@@ -68,14 +68,13 @@ Run inference on each image independently.
 
 ```sh
   quality predict \
-  --checkpoint tests/data/checkpoints/model.ckpt-10 \
+  --checkpoint quality/data/model/model.ckpt-1000042 \
   --output tests/output/ \
   tests/data/BBBC006*10.png
 ```
-Note: this model checkpoint in the example has only been trained for
-10 steps and will probably make random predictions.
 
-Summarize the prediction results across the entire dataset.
+Summarize the prediction results across the entire dataset. Output will be in
+"summary" sub directory.
 ```sh
 quality summarize tests/output/miq_result_images/
 ```
@@ -115,7 +114,7 @@ quality fit \
 Example evaluation:
 ```sh
 quality evaluate \
-	--checkpoint tests/data/checkpoints/model.ckpt-10 \
+	--checkpoint quality/data/model/model.ckpt-1000042 \
 	--output tests/data/output \
 	tests/data/training/0/*.tif \
 	tests/data/training/1/*.tif \

@@ -18,16 +18,15 @@ setuptools.setup(
         "six",
         "tensorflow"
     ],
-    name="quality",
-    package_data={
-        "quality": [
-            "data/model/model.ckpt-*"
-        ]
-    },
+    name="microscopeimagequality",
+    url='https://github.com/google/microscopeimagequality',
+    author='Samuel Yang',
+    author_email='samuely@google.com',
+    license='Apache 2.0',
     packages=setuptools.find_packages(
         exclude=[
             "tests"
         ]
     ),
-    version="0.1.0"
+    version="0.1.0dev1"
 )
