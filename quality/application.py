@@ -5,11 +5,13 @@ import click
 import numpy
 import six
 import tensorflow
+import urllib
 
 # Use this backend for producing PNGs without interactive display.
 import matplotlib
 matplotlib.use('Agg')
 
+import quality.constants as constants
 import quality.data_provider
 import quality.dataset_creation
 import quality.evaluation
@@ -212,6 +214,19 @@ def fit(images, output):
                 save_interval_secs=60
             )
 
+@command.command()
+@click.argument("output_path", nargs=1, type=click.Path())
+def download(output_path):
+    print "Downloading model from %s to %s." % (constants.REMOTE_MODEL_CHECKPOINT_PATH, output_path)
+    if not os.path.isdir(output_path):
+        os.mkdir(output_path)
+    file_extensions = [".index", ".meta", ".data-00000-of-00001"]
+    for extension in file_extensions:
+        remote_path = constants.REMOTE_MODEL_CHECKPOINT_PATH + extension
+        local_path = os.path.join(output_path, os.path.basename(remote_path))
+        urllib.urlretrieve(remote_path, local_path)
+                                  
+    print "Downloaded %d files to %s." % (len(file_extensions), output_path)
 
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))

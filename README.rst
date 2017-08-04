@@ -22,6 +22,13 @@ cd All-Projects
 pip install --editable .
 ```
 
+Download the model:
+This downloads the `model.ckpt-1000042` checkpoint (a model trained
+for 1000042 steps).
+```sh
+quality download downloaded_models
+```
+
 Add path to local repository (e.g. `/Users/user/my_repo/All-projects`)
 to `PYTHONPATH` environment variable:
 ```sh
@@ -49,10 +56,8 @@ degrade.degrade(...)
 ## Running inference
 
 ### Requirements for running inference
-* A pre-trained TensorFlow model `.ckpt` file, available in
-  `quality/data/model/` directory. Model `model.ckpt-1000042` has been
-  trained for 1,000,042 steps and is the one for which results in the
-  manuscript were computed with.  
+* A pre-trained TensorFlow model `.ckpt` files, downloadable using
+  download instructions above.
 * TensorFlow 1.0.0 or higher, numpy, scipy, pypng, PIL, skimage, matplotlib
 * Input grayscale 16-bit images, `.png` of `.tif` format, all with the same
 width and height.
@@ -68,7 +73,7 @@ Run inference on each image independently.
 
 ```sh
   quality predict \
-  --checkpoint quality/data/model/model.ckpt-1000042 \
+  --checkpoint downloaded_models/model.ckpt-1000042 \
   --output tests/output/ \
   tests/data/BBBC006*10.png
 ```
@@ -114,7 +119,7 @@ quality fit \
 Example evaluation:
 ```sh
 quality evaluate \
-	--checkpoint quality/data/model/model.ckpt-1000042 \
+	--checkpoint downloaded_models/model.ckpt-1000042 \
 	--output tests/data/output \
 	tests/data/training/0/*.tif \
 	tests/data/training/1/*.tif \
