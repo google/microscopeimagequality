@@ -1,7 +1,7 @@
 import tensorflow
 import tensorflow.contrib.slim
 
-import quality.miq
+import microscopeimagequality.miq
 
 
 class MiqTest(tensorflow.test.TestCase):
@@ -13,7 +13,7 @@ class MiqTest(tensorflow.test.TestCase):
 
             predictions = tensorflow.contrib.layers.fully_connected(inputs, 3)
 
-            quality.miq.add_loss(targets, predictions, use_rank_loss=True)
+            microscopeimagequality.miq.add_loss(targets, predictions, use_rank_loss=True)
 
             total_loss = tensorflow.losses.get_total_loss()
 

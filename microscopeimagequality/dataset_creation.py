@@ -11,7 +11,7 @@ import skimage.io
 import tensorflow
 import tensorflow.core.example
 
-import quality.data_provider
+import microscopeimagequality.data_provider
 
 # Threshold for foreground objects (after background subtraction).
 _FOREGROUND_THRESHOLD = 100.0 / 65535
@@ -232,7 +232,7 @@ def convert_to_examples(dataset,
 
     # Write the number of examples as a separate file.
     with open(
-            quality.data_provider.get_filename_num_records(
+            microscopeimagequality.data_provider.get_filename_num_records(
                 os.path.join(output_directory, output_tfrecord_filename)), 'w') as f:
         f.write(str(dataset.num_examples))
 
@@ -322,13 +322,13 @@ def generate_tf_example(image, label, image_path):
     features = example.features
 
     image_expanded = numpy.expand_dims(image, axis=2)
-    features.feature[quality.data_provider.FEATURE_IMAGE].float_list.value.extend(
+    features.feature[microscopeimagequality.data_provider.FEATURE_IMAGE].float_list.value.extend(
         (image_expanded.flatten().tolist()))
 
-    features.feature[quality.data_provider.FEATURE_IMAGE_CLASS].float_list.value.extend(
+    features.feature[microscopeimagequality.data_provider.FEATURE_IMAGE_CLASS].float_list.value.extend(
         (label.flatten().tolist()))
 
-    features.feature[quality.data_provider.FEATURE_IMAGE_PATH].bytes_list.value.append(
+    features.feature[microscopeimagequality.data_provider.FEATURE_IMAGE_PATH].bytes_list.value.append(
         str.encode(image_path)
     )
 

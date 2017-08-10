@@ -14,7 +14,7 @@ import tensorflow
 import tensorflow.contrib.slim
 import urllib
 
-import quality.constants as constants
+import microscopeimagequality.constants as constants
 
 DEFAULT_MODEL_DIRECTORY = pkg_resources.resource_filename(__name__, "data")
 DEFAULT_MODEL_PATH = DEFAULT_MODEL_DIRECTORY + "/" + os.path.basename(constants.REMOTE_MODEL_CHECKPOINT_PATH)

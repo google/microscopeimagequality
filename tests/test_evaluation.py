@@ -6,7 +6,7 @@ import numpy
 import tensorflow
 import tensorflow.contrib.slim
 
-import quality.evaluation
+import microscopeimagequality.evaluation
 
 
 class Evaluation(tensorflow.test.TestCase):
@@ -23,14 +23,14 @@ class Evaluation(tensorflow.test.TestCase):
         image = numpy.expand_dims(
             numpy.expand_dims(
                 numpy.ones((image_width, image_width)), axis=0), axis=3)
-        annotated_image = quality.evaluation.annotate_patch(image, prediction=0, label=0)
+        annotated_image = microscopeimagequality.evaluation.annotate_patch(image, prediction=0, label=0)
         expected_image_width = (
-            image_width * quality.evaluation._IMAGE_ANNOTATION_MAGNIFICATION_PERCENT / 100)
+            image_width * microscopeimagequality.evaluation._IMAGE_ANNOTATION_MAGNIFICATION_PERCENT / 100)
         self.assertEquals(annotated_image.shape,
                           (1, expected_image_width, expected_image_width, 1))
 
         def check_image_matches_golden(prediction, label):
-            annotated_image = quality.evaluation.annotate_patch(
+            annotated_image = microscopeimagequality.evaluation.annotate_patch(
                 image, prediction=prediction, label=label)
             test_image = numpy.squeeze(annotated_image).astype(numpy.uint8)
             golden = numpy.array(
@@ -54,7 +54,7 @@ class Evaluation(tensorflow.test.TestCase):
         predictions = tensorflow.zeros([self.batch_size, ])
         labels = tensorflow.zeros([self.batch_size, ])
         probabilities = tensorflow.zeros([self.batch_size, num_classes])
-        quality.evaluation.annotate_classification_errors(images, predictions, labels,
+        microscopeimagequality.evaluation.annotate_classification_errors(images, predictions, labels,
                                                           probabilities, self.image_shape[0],
                                                           self.image_shape[1])
 
@@ -67,7 +67,7 @@ class Evaluation(tensorflow.test.TestCase):
             predictions = tensorflow.zeros([self.batch_size, ])
             labels = tensorflow.zeros([self.batch_size, ])
             probabilities = tensorflow.zeros([self.batch_size, num_classes])
-            image, summary = quality.evaluation.annotate_classification_errors(
+            image, summary = microscopeimagequality.evaluation.annotate_classification_errors(
                 images, predictions, labels, probabilities, self.image_shape[0],
                 self.image_shape[1])
 
@@ -80,7 +80,7 @@ class Evaluation(tensorflow.test.TestCase):
 
     def testGetConfusionMatrix(self):
         predicted_probabilities = numpy.array([[0.4, 0.6], [0, 1]])
-        confusion_matrix = quality.evaluation.get_confusion_matrix(
+        confusion_matrix = microscopeimagequality.evaluation.get_confusion_matrix(
             predicted_probabilities, [0, 1],
             os.path.join(self.test_dir, 'confusion_matrix.png'),
             'Test confusion matrix',
@@ -90,7 +90,7 @@ class Evaluation(tensorflow.test.TestCase):
 
     def testGetConfusionMatrixWithProbabilities(self):
         predicted_probabilities = numpy.array([[0.4, 0.6], [0, 1]])
-        confusion_matrix = quality.evaluation.get_confusion_matrix(
+        confusion_matrix = microscopeimagequality.evaluation.get_confusion_matrix(
             predicted_probabilities, [0, 1],
             os.path.join(self.test_dir, 'confusion_matrix_probabilities.png'),
             'Test confusion matrix with probabilities',
@@ -103,7 +103,7 @@ class Evaluation(tensorflow.test.TestCase):
             probabilities = tensorflow.constant(
                 [[0.0, 1.0], [0.2, 0.8], [0.5, 0.5], [0.9, 0.1]])
             labels = tensorflow.constant([1, 1, 1, 1])
-            prediction, label = quality.evaluation.get_aggregated_prediction(probabilities,
+            prediction, label = microscopeimagequality.evaluation.get_aggregated_prediction(probabilities,
                                                                              labels,
                                                                              self.batch_size)
 
@@ -115,7 +115,7 @@ class Evaluation(tensorflow.test.TestCase):
             probabilities = tensorflow.constant(
                 [[0.6, 0.4], [0.6, 0.4], [0.6, 0.4], [0.0, 1.0]])
             labels = tensorflow.constant([1, 1, 1, 1])
-            prediction, label = quality.evaluation.get_aggregated_prediction(probabilities,
+            prediction, label = microscopeimagequality.evaluation.get_aggregated_prediction(probabilities,
                                                                              labels,
                                                                              self.batch_size)
             self.assertEquals(sess.run(label), 1)
@@ -126,7 +126,7 @@ class Evaluation(tensorflow.test.TestCase):
             probabilities = tensorflow.constant(
                 [[0.4, 0.6], [0.4, 0.6], [0.4, 0.6], [1.0, 0.0]])
             labels = tensorflow.constant([0, 0, 0, 0])
-            prediction, label = quality.evaluation.get_aggregated_prediction(probabilities,
+            prediction, label = microscopeimagequality.evaluation.get_aggregated_prediction(probabilities,
                                                                              labels,
                                                                              self.batch_size)
             self.assertEquals(sess.run(label), 0)
@@ -137,7 +137,7 @@ class Evaluation(tensorflow.test.TestCase):
             probabilities = tensorflow.constant(
                 [[1.0, 0.0], [0.8, 0.2], [0.5, 0.5], [0.1, 0.9]])
             labels = tensorflow.constant([0, 0, 0, 0])
-            prediction, label = quality.evaluation.get_aggregated_prediction(probabilities,
+            prediction, label = microscopeimagequality.evaluation.get_aggregated_prediction(probabilities,
                                                                              labels,
                                                                              self.batch_size)
             self.assertEquals(sess.run(label), 0)
@@ -148,7 +148,7 @@ class Evaluation(tensorflow.test.TestCase):
             probabilities = tensorflow.constant(
                 [[0.0, 1.0], [0.0, 0.1], [0.0, 0.1], [0.0, 1.0]])
             labels = tensorflow.constant([0, 0, 0, 1])
-            _, label = quality.evaluation.get_aggregated_prediction(probabilities, labels,
+            _, label = microscopeimagequality.evaluation.get_aggregated_prediction(probabilities, labels,
                                                                     self.batch_size)
             with self.assertRaises(tensorflow.errors.InvalidArgumentError):
                 self.assertEquals(sess.run(label), 0)
@@ -158,7 +158,7 @@ class Evaluation(tensorflow.test.TestCase):
             probabilities = tensorflow.constant(
                 [[1.0, 0.0], [0.8, 0.2], [0.5, 0.5], [0.1, 0.9]])
             labels = tensorflow.constant([0, 0, 0, 0], dtype=tensorflow.int64)
-            prediction, label = quality.evaluation.get_aggregated_prediction(probabilities,
+            prediction, label = microscopeimagequality.evaluation.get_aggregated_prediction(probabilities,
                                                                              labels,
                                                                              self.batch_size)
             self.assertEquals(sess.run(label), 0)
@@ -174,7 +174,7 @@ class Evaluation(tensorflow.test.TestCase):
         patches = numpy.ones((num_patches, 28, 28, 1))
         probabilities = numpy.ones((num_patches, 2)) / 2.0
         labels = numpy.ones(num_patches, dtype=numpy.int32)
-        quality.evaluation.visualize_image_predictions(
+        microscopeimagequality.evaluation.visualize_image_predictions(
             patches,
             probabilities,
             labels,
@@ -183,15 +183,15 @@ class Evaluation(tensorflow.test.TestCase):
             show_plot=True)
 
     def testGetClassRgbIsHsv(self):
-        class_rgb = quality.evaluation._get_class_rgb(11, 0)
+        class_rgb = microscopeimagequality.evaluation._get_class_rgb(11, 0)
         self.assertEquals(3, len(class_rgb))
         # This is the first HSV color.
         self.assertEquals((1.0, 0, 0), class_rgb)
 
     def testGetCertainty(self):
-        certainty = quality.evaluation.get_certainty(numpy.array([0.5, 0.5]))
+        certainty = microscopeimagequality.evaluation.get_certainty(numpy.array([0.5, 0.5]))
         self.assertEquals(0.0, certainty)
-        certainty = quality.evaluation.get_certainty(numpy.array([1.0, 0.0]))
+        certainty = microscopeimagequality.evaluation.get_certainty(numpy.array([1.0, 0.0]))
         self.assertEquals(1.0, certainty)
 
     def testGetRgbImageRuns(self):
@@ -206,7 +206,7 @@ class Evaluation(tensorflow.test.TestCase):
             (num_patches, num_classes), dtype=numpy.float32) / num_classes
         labels = numpy.ones(num_patches, dtype=numpy.int32)
 
-        rgb_image = quality.evaluation.get_rgb_image(
+        rgb_image = microscopeimagequality.evaluation.get_rgb_image(
             numpy.max(image), patches, probabilities, labels,
             (image_width, image_width))
         self.assertEquals(rgb_image.shape, (image_width, image_width, 3))
@@ -217,7 +217,7 @@ class Evaluation(tensorflow.test.TestCase):
         probabilities = numpy.zeros(
             (num_patches, num_classes), dtype=numpy.float32) / num_classes
 
-        rgb_image = quality.evaluation.get_rgb_image(
+        rgb_image = microscopeimagequality.evaluation.get_rgb_image(
             numpy.max(image), patches, probabilities, labels,
             (image_width, image_width))
         self.assertEquals(rgb_image.shape, (image_width, image_width, 3))
@@ -226,7 +226,7 @@ class Evaluation(tensorflow.test.TestCase):
         probabilities = numpy.array([[1.0 / 3, 1.0 / 3, 1.0 / 3], [0.0, 0.2, 0.8]])
 
         (predicted_class, certainties, probabilities_averaged
-         ) = quality.evaluation.aggregate_prediction_from_probabilities(probabilities)
+         ) = microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(probabilities)
         self.assertEquals(2, predicted_class)
         numpy.testing.assert_allclose(
             numpy.array([0.0, 0.2, 0.8]), probabilities_averaged, atol=1e-3)
@@ -241,7 +241,7 @@ class Evaluation(tensorflow.test.TestCase):
     def testAggregatePredictionFromProbabilitiesLeastCertain(self):
         probabilities = numpy.ones((2, 3)) / 3.0
         (predicted_class, certainties, probabilities_averaged
-         ) = quality.evaluation.aggregate_prediction_from_probabilities(probabilities)
+         ) = microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(probabilities)
         self.assertEquals(0, predicted_class)
         numpy.testing.assert_allclose(
             numpy.array([1.0 / 3, 1.0 / 3, 1.0 / 3]),
@@ -258,7 +258,7 @@ class Evaluation(tensorflow.test.TestCase):
     def testAggregatePredictionFromProbabilitiesMostCertain(self):
         probabilities = numpy.array([[1.0 / 3, 1.0 / 3, 1.0 / 3], [0.0, 0.0, 1.0]])
         (predicted_class, certainties, probabilities_averaged
-         ) = quality.evaluation.aggregate_prediction_from_probabilities(probabilities)
+         ) = microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(probabilities)
         self.assertEquals(2, predicted_class)
         numpy.testing.assert_allclose(
             numpy.array([0, 0, 1.0]), probabilities_averaged, atol=1e-3)
@@ -272,8 +272,8 @@ class Evaluation(tensorflow.test.TestCase):
 
     def testAggregatePredictionFromProbabilitiesWithProduct(self):
         probabilities = numpy.array([[0.25, 0.25, 0.5], [0.1, 0.2, 0.7]])
-        probabilities_aggregated = quality.evaluation.aggregate_prediction_from_probabilities(
-            probabilities, quality.evaluation.METHOD_PRODUCT).probabilities
+        probabilities_aggregated = microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(
+            probabilities, microscopeimagequality.evaluation.METHOD_PRODUCT).probabilities
         expected = probabilities[0, :] * probabilities[1, :]
         expected /= expected.sum()
         numpy.testing.assert_allclose(
@@ -282,8 +282,8 @@ class Evaluation(tensorflow.test.TestCase):
     def testAggregatePredictionFromProbabilitiesWithProduct2(self):
         probabilities = numpy.array(
             [[0.25, 0.25, 0.5], [0.1, 0.2, 0.7], [0.4, 0.3, 0.3]])
-        probabilities_aggregated = quality.evaluation.aggregate_prediction_from_probabilities(
-            probabilities, quality.evaluation.METHOD_PRODUCT).probabilities
+        probabilities_aggregated = microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(
+            probabilities, microscopeimagequality.evaluation.METHOD_PRODUCT).probabilities
         numpy.testing.assert_allclose(
             numpy.array([0.077, 0.115, 0.807]), probabilities_aggregated, atol=1e-3)
 
@@ -292,11 +292,11 @@ class Evaluation(tensorflow.test.TestCase):
         predicted_rgb = (1, 0, 0)
         actual_rgb = (0, 1, 0)
         max_value = 1
-        image_rgb = quality.evaluation._add_rgb_annotation(image, predicted_rgb, actual_rgb,
+        image_rgb = microscopeimagequality.evaluation._add_rgb_annotation(image, predicted_rgb, actual_rgb,
                                                            max_value)
         image_expected = numpy.zeros((20, 20, 3))
-        image_expected[0:quality.evaluation.BORDER_SIZE, :, 1] = 1
-        image_expected[-1 * quality.evaluation.BORDER_SIZE:, :, 0] = 1
+        image_expected[0:microscopeimagequality.evaluation.BORDER_SIZE, :, 1] = 1
+        image_expected[-1 * microscopeimagequality.evaluation.BORDER_SIZE:, :, 0] = 1
         numpy.testing.assert_array_equal(image_rgb, image_expected)
 
     def testPatchesToImageNonSquare(self):
@@ -306,24 +306,24 @@ class Evaluation(tensorflow.test.TestCase):
         patch_width = 28
         image_shape = patch_width * num_rows, patch_width * num_cols
         patches = numpy.ones((num_patches, patch_width, patch_width, 1))
-        image = quality.evaluation._patches_to_image(patches, image_shape)
+        image = microscopeimagequality.evaluation._patches_to_image(patches, image_shape)
         self.assertEquals(image.shape, (image_shape[0], image_shape[1], 1))
 
         with self.assertRaises(ValueError):
             image_shape_invalid = (20, 20)
-            quality.evaluation._patches_to_image(patches, image_shape_invalid)
+            microscopeimagequality.evaluation._patches_to_image(patches, image_shape_invalid)
 
     def testSetBorderPixels(self):
         image = numpy.zeros((5, 5, 1))
         image_expected = numpy.ones((5, 5, 1))
         image_expected[2, 2, :] = 0
-        image_with_border = quality.evaluation._set_border_pixels(image, value=1)
+        image_with_border = microscopeimagequality.evaluation._set_border_pixels(image, value=1)
         numpy.testing.assert_array_equal(image_with_border, image_expected)
 
     def testApplyImageGamma(self):
         image = numpy.array([1.0, 2.0])
         image_original = numpy.copy(image)
-        image_with_gamma = quality.evaluation.apply_image_gamma(image, gamma=0.5)
+        image_with_gamma = microscopeimagequality.evaluation.apply_image_gamma(image, gamma=0.5)
 
         # Check original image is unmodified.
         numpy.testing.assert_array_equal(image, image_original)
@@ -339,7 +339,7 @@ class Evaluation(tensorflow.test.TestCase):
                 [self.batch_size, self.patch_width, self.patch_width, 1])
             num_classes = 11
             one_hot_labels = tensorflow.zeros([self.batch_size, num_classes])
-            labels = quality.evaluation.get_model_and_metrics(images, num_classes,
+            labels = microscopeimagequality.evaluation.get_model_and_metrics(images, num_classes,
                                                               one_hot_labels, False).labels
 
             sv = tensorflow.train.Supervisor()
@@ -356,7 +356,7 @@ class Evaluation(tensorflow.test.TestCase):
             one_hot_labels = tensorflow.constant([0, 1, 0, 1], dtype=tensorflow.float32, shape=(2, 2))
 
             num_classes = 11
-            labels = quality.evaluation.get_model_and_metrics(images, num_classes,
+            labels = microscopeimagequality.evaluation.get_model_and_metrics(images, num_classes,
                                                               one_hot_labels, False).labels
 
             sv = tensorflow.train.Supervisor()
@@ -378,7 +378,7 @@ class Evaluation(tensorflow.test.TestCase):
         orig_names = ['orig_name'] * self.batch_size
         aggregate_predictions = range(self.batch_size)
         output_path = os.path.join(self.test_dir, 'results.csv')
-        quality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
+        microscopeimagequality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
                                                   certainties, orig_names,
                                                   aggregate_predictions, output_path)
 
@@ -398,12 +398,12 @@ class Evaluation(tensorflow.test.TestCase):
         test_directory = os.path.join(self.test_dir, 'save_load_test')
         os.makedirs(test_directory)
         output_path = os.path.join(test_directory, 'results.csv')
-        quality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
+        microscopeimagequality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels,
                                                   certainties, orig_names,
                                                   aggregate_predictions, output_path)
 
         (aggregate_probabilities_2, aggregate_labels_2, certainties_2, orig_names_2,
-         aggregate_predictions_2) = quality.evaluation.load_inference_results(test_directory)
+         aggregate_predictions_2) = microscopeimagequality.evaluation.load_inference_results(test_directory)
         numpy.testing.assert_array_equal(aggregate_probabilities,
                                          aggregate_probabilities_2)
         self.assertEquals(aggregate_labels, aggregate_labels_2)
@@ -418,12 +418,12 @@ class Evaluation(tensorflow.test.TestCase):
         num_classes = 4
         aggregate_probabilities = numpy.ones((self.batch_size, num_classes))
         aggregate_labels = range(self.batch_size)
-        quality.evaluation.save_result_plots(
+        microscopeimagequality.evaluation.save_result_plots(
             aggregate_probabilities,
             aggregate_labels,
             save_confusion=True,
             output_directory=self.test_dir)
-        quality.evaluation.save_result_plots(
+        microscopeimagequality.evaluation.save_result_plots(
             aggregate_probabilities,
             aggregate_labels,
             save_confusion=False,
@@ -433,7 +433,7 @@ class Evaluation(tensorflow.test.TestCase):
         probabilities = numpy.array(((0.0, 1.0), (0.5, 0.5), (0.2, 0.8)))
         predictions = numpy.array([0, 1, 0])
         assert probabilities.shape[0] == len(predictions)
-        quality.evaluation.save_prediction_histogram(
+        microscopeimagequality.evaluation.save_prediction_histogram(
             predictions,
             os.path.join(self.test_dir, 'histogram.png'),
             probabilities.shape[1])

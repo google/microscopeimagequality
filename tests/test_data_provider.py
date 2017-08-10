@@ -7,7 +7,7 @@ import skimage.io
 import tensorflow
 import tensorflow.contrib.slim
 
-import quality.data_provider
+import microscopeimagequality.data_provider
 
 TFRECORD_NUM_ENTRIES = 33
 
@@ -35,14 +35,14 @@ image_height = 520
 
 def test_get_filename_num_records():
     tf_record_path = "/folder/filename.tfrecord"
-    path = quality.data_provider.get_filename_num_records(tf_record_path)
+    path = microscopeimagequality.data_provider.get_filename_num_records(tf_record_path)
     expected_path = "/folder/filename.num_records"
     assert expected_path == path
 
 
 def test_get_num_records():
     tf_record_path = os.path.join(input_directory, "data_train.tfrecord")
-    num_records = quality.data_provider.get_num_records(tf_record_path)
+    num_records = microscopeimagequality.data_provider.get_num_records(tf_record_path)
     expected_num_records = TFRECORD_NUM_ENTRIES
     assert expected_num_records == num_records
 
@@ -62,11 +62,11 @@ def get_tf_session(graph):
 def get_data_from_tfrecord():
     """Helper function that gets image, label tensors from tfrecord."""
     split_name = "train"
-    num_records = quality.data_provider.get_num_records(tfrecord_file_pattern % split_name)
+    num_records = microscopeimagequality.data_provider.get_num_records(tfrecord_file_pattern % split_name)
     assert TFRECORD_NUM_ENTRIES == num_records
-    dataset = quality.data_provider.get_split(split_name, tfrecord_file_pattern, num_classes=num_classes, image_width=image_width, image_height=image_height)
+    dataset = microscopeimagequality.data_provider.get_split(split_name, tfrecord_file_pattern, num_classes=num_classes, image_width=image_width, image_height=image_height)
     provider = tensorflow.contrib.slim.dataset_data_provider.DatasetDataProvider(dataset, common_queue_capacity=2 * batch_size, common_queue_min=batch_size, shuffle=False)
-    [image, label, image_path] = provider.get([quality.data_provider.FEATURE_IMAGE, quality.data_provider.FEATURE_IMAGE_CLASS, quality.data_provider.FEATURE_IMAGE_PATH ])
+    [image, label, image_path] = provider.get([microscopeimagequality.data_provider.FEATURE_IMAGE, microscopeimagequality.data_provider.FEATURE_IMAGE_CLASS, microscopeimagequality.data_provider.FEATURE_IMAGE_PATH ])
     return image, label, image_path
 
 
@@ -79,7 +79,7 @@ def test_get_split():
 
         # Check that the tensor shapes are as expected.
         np_image, np_label, np_image_path = sess.run([image, label, image_path])
-        numpy.testing.assert_array_equal(list(np_image.shape), [quality.data_provider.IMAGE_WIDTH, quality.data_provider.IMAGE_WIDTH, 1])
+        numpy.testing.assert_array_equal(list(np_image.shape), [microscopeimagequality.data_provider.IMAGE_WIDTH, microscopeimagequality.data_provider.IMAGE_WIDTH, 1])
         numpy.testing.assert_array_equal(list(np_label.shape), [num_classes])
         numpy.testing.assert_array_equal([1], list(np_image_path.shape))
         assert 22 == len(np_image_path[0])
@@ -100,14 +100,14 @@ def test_batching():
         expanded_image = tensorflow.expand_dims(image, dim=0)
         expanded_image_path = tensorflow.expand_dims(image_path, dim=0)
 
-        images, labels, image_paths = quality.data_provider.get_batches(expanded_image, expanded_label, expanded_image_path, batch_size=batch_size, num_threads=1)
+        images, labels, image_paths = microscopeimagequality.data_provider.get_batches(expanded_image, expanded_label, expanded_image_path, batch_size=batch_size, num_threads=1)
 
         sess = get_tf_session(g)
 
         [np_images, np_labels, np_image_paths] = sess.run([images, labels, image_paths])
 
         # Check the number of images and shape is as expected.
-        numpy.testing.assert_array_equal(list(np_images.shape), [batch_size, quality.data_provider.IMAGE_WIDTH, quality.data_provider.IMAGE_WIDTH, 1 ])
+        numpy.testing.assert_array_equal(list(np_images.shape), [batch_size, microscopeimagequality.data_provider.IMAGE_WIDTH, microscopeimagequality.data_provider.IMAGE_WIDTH, 1 ])
         numpy.testing.assert_array_equal([batch_size, 1], list(np_image_paths.shape))
         assert 1 == len(np_image_paths[0])
         assert "image_000" == os.path.basename(np_image_paths[0][0])
@@ -124,7 +124,7 @@ def test_get_image_patch_tensor():
     g = tensorflow.Graph()
     with g.as_default():
         image, label, image_path = get_data_from_tfrecord()
-        patch, label, image_path = quality.data_provider.get_image_patch_tensor(image, label, image_path, patch_width=patch_width)
+        patch, label, image_path = microscopeimagequality.data_provider.get_image_patch_tensor(image, label, image_path, patch_width=patch_width)
 
         sess = get_tf_session(g)
 
@@ -145,7 +145,7 @@ def test_apply_random_brightness_adjust():
     with g.as_default():
         image, _, _ = get_data_from_tfrecord()
         factor = 2.0
-        patch = quality.data_provider.apply_random_brightness_adjust(image, factor, factor)
+        patch = microscopeimagequality.data_provider.apply_random_brightness_adjust(image, factor, factor)
 
         sess = get_tf_session(g)
 
@@ -160,7 +160,7 @@ def test_get_image_tiles_tensor():
     g = tensorflow.Graph()
     with g.as_default():
         image, label, image_path = get_data_from_tfrecord()
-        tiles, labels, image_paths = quality.data_provider.get_image_tiles_tensor(image, label, image_path, patch_width=patch_width)
+        tiles, labels, image_paths = microscopeimagequality.data_provider.get_image_tiles_tensor(image, label, image_path, patch_width=patch_width)
 
         sess = get_tf_session(g)
 
@@ -180,7 +180,7 @@ def test_get_image_tiles_tensor_non_square():
         image = tensorflow.zeros([patch_width * 4, patch_width * 3, 1])
         label = tensorflow.constant([0, 0, 1])
         image_path = tensorflow.constant(["path"])
-        tiles, labels, image_paths = quality.data_provider.get_image_tiles_tensor(image, label, image_path, patch_width=patch_width)
+        tiles, labels, image_paths = microscopeimagequality.data_provider.get_image_tiles_tensor(image, label, image_path, patch_width=patch_width)
 
         sess = get_tf_session(g)
 
@@ -194,7 +194,7 @@ def test_get_image_tiles_tensor_non_square():
 
 
 def test_provide_data_with_random_patches():
-    images, one_hot_labels, image_paths, _ = quality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=batch_size, num_classes=num_classes, image_width=image_width, image_height=image_height, patch_width=28, randomize=True)
+    images, one_hot_labels, image_paths, _ = microscopeimagequality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=batch_size, num_classes=num_classes, image_width=image_width, image_height=image_height, patch_width=28, randomize=True)
 
     assert images.get_shape().as_list(), [batch_size, 28, 28 == 1]
     assert one_hot_labels.get_shape().as_list(), [batch_size == num_classes]
@@ -204,7 +204,7 @@ def test_provide_data_with_random_patches():
 def test_provide_data_image_path():
     g = tensorflow.Graph()
     with g.as_default():
-        _, _, image_paths, _ = quality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=patches_per_image, num_classes=3, image_width=image_width, image_height=image_height, patch_width=28, randomize=False, num_threads=1)
+        _, _, image_paths, _ = microscopeimagequality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=patches_per_image, num_classes=3, image_width=image_width, image_height=image_height, patch_width=28, randomize=False, num_threads=1)
 
         sess = get_tf_session(g)
 
@@ -218,7 +218,7 @@ def test_provide_data_image_path():
 def test_provide_data_uniform_tiles():
     g = tensorflow.Graph()
     with g.as_default():
-        images, one_hot_labels, _, _ = quality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=patches_per_image, num_classes=num_classes, image_width=image_width, image_height=image_height, patch_width=28, randomize=False)
+        images, one_hot_labels, _, _ = microscopeimagequality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=patches_per_image, num_classes=num_classes, image_width=image_width, image_height=image_height, patch_width=28, randomize=False)
 
         num_tiles_expected = patches_per_image
         assert images.get_shape().as_list(), [num_tiles_expected, 28, 28 == 1]
@@ -242,7 +242,7 @@ def test_provide_data_with_deterministic_ordering():
     g = tensorflow.Graph()
 
     with g.as_default():
-        images, one_hot_labels, image_paths, _ = quality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=batch_size, num_classes=num_classes, image_width=image_width, image_height=image_height, patch_width=28 * patch_size_factor, randomize=False, num_threads=1 )
+        images, one_hot_labels, image_paths, _ = microscopeimagequality.data_provider.provide_data(tfrecord_file_pattern, split_name="train", batch_size=batch_size, num_classes=num_classes, image_width=image_width, image_height=image_height, patch_width=28 * patch_size_factor, randomize=False, num_threads=1 )
 
         sess = get_tf_session(g)
 

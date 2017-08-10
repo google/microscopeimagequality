@@ -5,7 +5,7 @@ Example usage:
   To simulate defocus at a depth of 2 microns (for the default imaging
     parameters):
 
-  from quality import degrade
+  from microscopeimagequality import degrade
   degrade.degrade_images('/path_clean_images/*',
                    '/degraded_image_output/'
                    z_depth_meters=2e-6,
@@ -24,7 +24,7 @@ import scipy.signal
 import scipy.special
 import skimage.io
 
-import quality.dataset_creation
+import microscopeimagequality.dataset_creation
 
 
 class ImageDegrader(object):
@@ -232,13 +232,13 @@ def degrade_images(images, output_path, z_depth_meters, exposure_factor, random_
 
     degrader = ImageDegrader(random_seed, photoelectron_factor, sensor_offset_in_photoelectrons)
 
-    image_paths = quality.dataset_creation.get_images_from_glob(images, max_images=1e7)
+    image_paths = microscopeimagequality.dataset_creation.get_images_from_glob(images, max_images=1e7)
 
     if not image_paths:
         raise ValueError('No images found with glob %s.' % images)
 
     for path in image_paths:
-        image = quality.dataset_creation.read_16_bit_greyscale(path)
+        image = microscopeimagequality.dataset_creation.read_16_bit_greyscale(path)
         blurred_image = degrader.apply_blur_kernel(image, psf)
         exposure_adjusted_image = degrader.set_exposure(blurred_image, exposure_factor)
 

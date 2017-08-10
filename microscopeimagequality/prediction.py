@@ -17,9 +17,9 @@ import numpy
 import skimage.io
 import tensorflow
 
-import quality.constants
-import quality.dataset_creation
-import quality.evaluation
+import microscopeimagequality.constants
+import microscopeimagequality.dataset_creation
+import microscopeimagequality.evaluation
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
@@ -92,7 +92,7 @@ class ImageQualityClassifier(object):
         image_placeholder, labels_fake, image_path_fake,
         model_patch_side_length)
 
-    model_metrics = quality.evaluation.get_model_and_metrics(
+    model_metrics = microscopeimagequality.evaluation.get_model_and_metrics(
         tiles,
         num_classes=num_classes,
         one_hot_labels=labels,
@@ -113,8 +113,8 @@ class ImageQualityClassifier(object):
     [np_probabilities] = self._sess.run(
         [self._probabilities], feed_dict=feed_dict)
 
-    return quality.evaluation.aggregate_prediction_from_probabilities(
-        np_probabilities, quality.evaluation.METHOD_AVERAGE)
+    return microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(
+        np_probabilities, microscopeimagequality.evaluation.METHOD_AVERAGE)
 
   def get_annotated_prediction(self, image):
     """Run inference to annotate the input image with patch predictions.
@@ -143,7 +143,7 @@ class ImageQualityClassifier(object):
     # We use '-1' to denote no true label exists.
     np_labels = -1 * numpy.ones((np_patches.shape[0]))
     return numpy.squeeze(
-        quality.evaluation.visualize_image_predictions(
+        microscopeimagequality.evaluation.visualize_image_predictions(
             np_patches,
             np_probabilities,
             np_labels,
@@ -242,12 +242,12 @@ def save_masks_and_annotated_visualization(orig_name,
 
     orig_name_png = os.path.splitext(os.path.basename(orig_name))[0] + '.png'
     visualized_image_name = ('actual%g_pred%g_mean_certainty=%0.3f' +
-                             (quality.constants.ORIG_IMAGE_FORMAT % orig_name_png))
+                             (microscopeimagequality.constants.ORIG_IMAGE_FORMAT % orig_name_png))
     output_path = (os.path.join(output_directory, visualized_image_name) %
                    (np_labels[0], prediction, certainties['mean']))
 
     annotated_visualization = numpy.squeeze(
-        quality.evaluation.visualize_image_predictions(
+        microscopeimagequality.evaluation.visualize_image_predictions(
             np_images,
             np_probabilities,
             np_labels,
@@ -269,17 +269,17 @@ def save_masks_and_annotated_visualization(orig_name,
         pad_and_save_image(mask, os.path.join(output_directory, mask_format % orig_name_png))
 
     # Create, pad and save masks.
-    certainties = quality.evaluation.certainties_from_probabilities(np_probabilities)
+    certainties = microscopeimagequality.evaluation.certainties_from_probabilities(np_probabilities)
     certainties = numpy.round(certainties *
                               numpy.iinfo(numpy.uint16).max).astype(numpy.uint16)
-    save_mask_from_patch_values(certainties, quality.constants.CERTAINTY_MASK_FORMAT)
+    save_mask_from_patch_values(certainties, microscopeimagequality.constants.CERTAINTY_MASK_FORMAT)
 
     predictions = numpy.argmax(np_probabilities, 1)
-    save_mask_from_patch_values(predictions, quality.constants.PREDICTIONS_MASK_FORMAT)
+    save_mask_from_patch_values(predictions, microscopeimagequality.constants.PREDICTIONS_MASK_FORMAT)
 
     valid_pixel_regions = numpy.ones(
         predictions.shape, dtype=numpy.uint16) * numpy.iinfo(numpy.uint16).max
-    save_mask_from_patch_values(valid_pixel_regions, quality.constants.VALID_MASK_FORMAT)
+    save_mask_from_patch_values(valid_pixel_regions, microscopeimagequality.constants.VALID_MASK_FORMAT)
 
 def _get_image_tiles_tensor(image, label, image_path, patch_width):
   """Gets patches that tile the input image, starting at upper left.
@@ -336,7 +336,7 @@ def run_model_inference( model_ckpt_file, probabilities, labels, images,
 
             [np_probabilities, np_labels, np_images, np_image_paths] = sess.run([probabilities, labels, images, image_paths])
 
-            (prediction, certainties, probabilities_i) = quality.evaluation.aggregate_prediction_from_probabilities(np_probabilities, aggregation_method)
+            (prediction, certainties, probabilities_i) = microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(np_probabilities, aggregation_method)
 
             # Each name must be unique since all workers write to same directory.
             orig_name = np_image_paths[0][0] if np_image_paths[0][0] else ('not_available_%03d_%07d.png' % shard_num, i)
@@ -348,7 +348,7 @@ def run_model_inference( model_ckpt_file, probabilities, labels, images,
                 aggregate_probabilities = numpy.expand_dims(probabilities_i, 0)
                 orig_names = []
                 all_certainties = {}
-                for k in quality.evaluation.CERTAINTY_TYPES.values():
+                for k in microscopeimagequality.evaluation.CERTAINTY_TYPES.values():
                     all_certainties[k] = []
             else:
                 patch_probabilities = numpy.concatenate((patch_probabilities,
@@ -373,13 +373,13 @@ def run_model_inference( model_ckpt_file, probabilities, labels, images,
 
         output_file = (os.path.join(output_directory, 'results-%05d-of-%05d.csv') % (shard_num, num_shards))
 
-        quality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels, all_certainties, orig_names, aggregate_predictions, output_file)
+        microscopeimagequality.evaluation.save_inference_results(aggregate_probabilities, aggregate_labels, all_certainties, orig_names, aggregate_predictions, output_file)
 
         # If we're not sharding, save out accuracy statistics.
         if num_shards == 1:
             save_confusion = not numpy.any(numpy.asarray(aggregate_labels) < 0)
 
-            quality.evaluation.save_result_plots(aggregate_probabilities, aggregate_labels, save_confusion, output_directory, patch_probabilities, patch_labels)
+            microscopeimagequality.evaluation.save_result_plots(aggregate_probabilities, aggregate_labels, save_confusion, output_directory, patch_probabilities, patch_labels)
 
         logging.info('Stopping threads')
 
@@ -399,7 +399,7 @@ def build_tfrecord_from_pngs(image_globs_list, use_unlabeled_data, num_classes,
     # Generate a local TFRecord
     tfrecord_file_pattern = _TFRECORD_FILE_PATTERN % ('%s', shard_num, num_shards)
 
-    num_samples_converted = quality.dataset_creation.dataset_to_examples_in_tfrecord(
+    num_samples_converted = microscopeimagequality.dataset_creation.dataset_to_examples_in_tfrecord(
         list_of_image_globs=image_globs_list,
         output_directory=eval_directory,
         output_tfrecord_filename=tfrecord_file_pattern % _SPLIT_NAME,

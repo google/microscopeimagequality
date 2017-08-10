@@ -3,7 +3,7 @@ import setuptools
 setuptools.setup(
     entry_points={
         "console_scripts": [
-            "quality=quality.application:command"
+            "microscopeimagequality=microscopeimagequality.application:command"
         ]
     },
     install_requires=[
@@ -20,7 +20,7 @@ setuptools.setup(
     test_requires=["pytest"],
     name="microscopeimagequality",
     package_data={
-        "quality": [
+        "microscopeimagequality": [
             "data/"
         ]
     },

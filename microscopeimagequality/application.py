@@ -10,14 +10,14 @@ import tensorflow
 import matplotlib
 matplotlib.use('Agg')
 
-import quality.constants as constants
-import quality.data_provider
-import quality.dataset_creation
-import quality.evaluation
-import quality.prediction
-import quality.miq
-import quality.summarize
-import quality.validation
+import microscopeimagequality.constants as constants
+import microscopeimagequality.data_provider
+import microscopeimagequality.dataset_creation
+import microscopeimagequality.evaluation
+import microscopeimagequality.prediction
+import microscopeimagequality.miq
+import microscopeimagequality.summarize
+import microscopeimagequality.validation
 
 _MAX_IMAGES_TO_VALIDATE = 1e6
 
@@ -40,9 +40,9 @@ def evaluate(images, checkpoint, output, patch_width):
 
     output_tfrecord_file_pattern = 'data_%s.sstable'
 
-    image_size = quality.dataset_creation.image_size_from_glob(images[0], patch_width)
+    image_size = microscopeimagequality.dataset_creation.image_size_from_glob(images[0], patch_width)
 
-    quality.dataset_creation.dataset_to_examples_in_tfrecord(
+    microscopeimagequality.dataset_creation.dataset_to_examples_in_tfrecord(
         list_of_image_globs=images,
         output_directory=output,
         output_tfrecord_filename=output_tfrecord_file_pattern % 'test',
@@ -60,7 +60,7 @@ def evaluate(images, checkpoint, output, patch_width):
     with graph.as_default():
         batch_size = int(image_size.height * image_size.width / patch_width ** 2)
 
-        images, one_hot_labels, _, num_samples = quality.data_provider.provide_data(
+        images, one_hot_labels, _, num_samples = microscopeimagequality.data_provider.provide_data(
             tfrecord_file_pattern=tfexamples_tfrecord_file_pattern,
             split_name='test',
             batch_size=batch_size,
@@ -71,7 +71,7 @@ def evaluate(images, checkpoint, output, patch_width):
             randomize=False
         )
 
-        logits, labels, probabilities, predictions = quality.evaluation.get_model_and_metrics(
+        logits, labels, probabilities, predictions = microscopeimagequality.evaluation.get_model_and_metrics(
             images=images,
             num_classes=num_classes,
             one_hot_labels=one_hot_labels,
@@ -80,12 +80,12 @@ def evaluate(images, checkpoint, output, patch_width):
         )
 
         # Define the loss
-        quality.miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
+        microscopeimagequality.miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
 
         loss = tensorflow.losses.get_total_loss()
 
         # Additional aggregate metrics
-        aggregated_prediction, aggregated_label = quality.evaluation.get_aggregated_prediction(probabilities, labels, batch_size)
+        aggregated_prediction, aggregated_label = microscopeimagequality.evaluation.get_aggregated_prediction(probabilities, labels, batch_size)
 
         metrics = {
             'Accuracy': tensorflow.contrib.metrics.streaming_accuracy(predictions, labels),
@@ -103,7 +103,7 @@ def evaluate(images, checkpoint, output, patch_width):
         tensorflow.summary.histogram("eval_predictions", predictions)
         tensorflow.summary.histogram("eval_probabilities", probabilities)
 
-        quality.evaluation.annotate_classification_errors(
+        microscopeimagequality.evaluation.annotate_classification_errors(
             images,
             predictions,
             labels,
@@ -136,10 +136,10 @@ def fit(images, output):
 
     output_tfrecord_file_pattern = ('worker%g_' % 0) + 'data_%s.tfrecord'
 
-    image_size = quality.dataset_creation.image_size_from_glob(images[0], 84)
+    image_size = microscopeimagequality.dataset_creation.image_size_from_glob(images[0], 84)
 
     # Read images and convert to TFExamples in an TFRecord.
-    quality.dataset_creation.dataset_to_examples_in_tfrecord(
+    microscopeimagequality.dataset_creation.dataset_to_examples_in_tfrecord(
         images,
         output,
         output_tfrecord_file_pattern % 'train',
@@ -167,7 +167,7 @@ def fit(images, output):
         # (non-local) replicas, the ReplicaDeviceSetter distributes the variables
         # across the different devices.
         with tensorflow.device(tensorflow.train.replica_device_setter(0)):
-            images, one_hot_labels, _, _ = quality.data_provider.provide_data(
+            images, one_hot_labels, _, _ = microscopeimagequality.data_provider.provide_data(
                 tfexamples_tfrecord_file_pattern,
                 split_name='train',
                 batch_size=64,
@@ -182,7 +182,7 @@ def fit(images, output):
             # slim.summaries.add_histogram_summaries([images, labels])
 
             # Define the model:
-            logits = quality.miq.miq_model(
+            logits = microscopeimagequality.miq.miq_model(
                 images=images,
                 num_classes=num_classes,
                 is_training=True,
@@ -190,7 +190,7 @@ def fit(images, output):
             )
 
             # Specify the loss function:
-            quality.miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
+            microscopeimagequality.miq.add_loss(logits, one_hot_labels, use_rank_loss=True)
             total_loss = tensorflow.losses.get_total_loss()
             tensorflow.summary.scalar('Total_Loss', total_loss)
 
@@ -214,16 +214,16 @@ def fit(images, output):
             )
 
 @command.command()
-@click.argument("output_path", nargs=-1, type=click.Path())
+@click.argument("output_path", nargs=-1, type=click.Path(), default=None)
 def download(output_path):
     if output_path:
-        quality.miq.download_model(output_path=output_path)
+        microscopeimagequality.miq.download_model(output_path=output_path[0])
     else:
-        quality.miq.download_model()
+        microscopeimagequality.miq.download_model()
 
 @command.command()
 @click.argument("images", nargs=-1, type=click.Path(exists=True))
-@click.option("--checkpoint", type=click.Path())
+@click.option("--checkpoint", type=click.Path(), default=None)
 @click.option("--height", type=int)
 @click.option("--output", type=click.Path())
 @click.option("--patch-width", default=84)
@@ -234,7 +234,7 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
         logging.fatal('Eval directory required.')
 
     if checkpoint is None:
-        logging.fatal('Model checkpoint file required.')
+        checkpoint = microscopeimagequality.miq.DEFAULT_MODEL_PATH
 
     if images is None:
         logging.fatal('Must provide image globs list.')
@@ -245,7 +245,7 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
     use_unlabeled_data = True
 
     # Input images will be cropped to image_height x image_width.
-    image_size = quality.dataset_creation.image_size_from_glob(images[0], patch_width)
+    image_size = microscopeimagequality.dataset_creation.image_size_from_glob(images[0], patch_width)
 
     if width is not None and height is not None:
         image_width = int(patch_width * numpy.floor(width / patch_width))
@@ -264,16 +264,16 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
 
     logging.info('Using batch_size=%d for image_width=%d, image_height=%d, model_patch_width=%d', batch_size, image_width, image_height, patch_width)
 
-    tfexamples_tfrecord = quality.prediction.build_tfrecord_from_pngs(images, use_unlabeled_data, 11, output, 0.0, 1.0, 1, 1, image_width, image_height)
+    tfexamples_tfrecord = microscopeimagequality.prediction.build_tfrecord_from_pngs(images, use_unlabeled_data, 11, output, 0.0, 1.0, 1, 1, image_width, image_height)
 
-    num_samples = quality.data_provider.get_num_records(tfexamples_tfrecord % quality.prediction._SPLIT_NAME)
+    num_samples = microscopeimagequality.data_provider.get_num_records(tfexamples_tfrecord % microscopeimagequality.prediction._SPLIT_NAME)
 
     logging.info('TFRecord has %g samples.', num_samples)
 
     graph = tensorflow.Graph()
 
     with graph.as_default():
-        images, one_hot_labels, image_paths, _ = quality.data_provider.provide_data(
+        images, one_hot_labels, image_paths, _ = microscopeimagequality.data_provider.provide_data(
             batch_size=batch_size,
             image_height=image_height,
             image_width=image_width,
@@ -281,11 +281,11 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
             num_threads=1,
             patch_width=patch_width,
             randomize=False,
-            split_name=quality.prediction._SPLIT_NAME,
+            split_name=microscopeimagequality.prediction._SPLIT_NAME,
             tfrecord_file_pattern=tfexamples_tfrecord
         )
 
-        model_metrics = quality.evaluation.get_model_and_metrics(
+        model_metrics = microscopeimagequality.evaluation.get_model_and_metrics(
             images=images,
             is_training=False,
             model_id=0,
@@ -293,8 +293,8 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
             one_hot_labels=one_hot_labels
         )
 
-        quality.prediction.run_model_inference(
-            aggregation_method=quality.evaluation.METHOD_AVERAGE,
+        microscopeimagequality.prediction.run_model_inference(
+            aggregation_method=microscopeimagequality.evaluation.METHOD_AVERAGE,
             image_height=image_height,
             image_paths=image_paths,
             image_width=image_width,
@@ -311,7 +311,7 @@ def predict(images, checkpoint, output, width, height, patch_width, visualize):
         )
 
     # Delete TFRecord to save disk space.
-    tfrecord_path = tfexamples_tfrecord % quality.prediction._SPLIT_NAME
+    tfrecord_path = tfexamples_tfrecord % microscopeimagequality.prediction._SPLIT_NAME
 
     os.remove(tfrecord_path)
 
@@ -324,12 +324,12 @@ def summarize(experiments):
     if experiments is None:
         logging.fatal('Experiment directory required.')
 
-    probabilities, labels, certainties, orig_names, predictions = quality.evaluation.load_inference_results(experiments)
+    probabilities, labels, certainties, orig_names, predictions = microscopeimagequality.evaluation.load_inference_results(experiments)
 
     if not predictions:
         logging.fatal('No inference output found at %s.', experiments)
 
-    quality.summarize.check_image_count_matches(experiments, len(predictions))
+    microscopeimagequality.summarize.check_image_count_matches(experiments, len(predictions))
 
     output_path = os.path.join(experiments, 'summary')
 
@@ -342,9 +342,9 @@ def summarize(experiments):
     if not os.path.isdir(output_path_all_plots):
         os.makedirs(output_path_all_plots)
 
-    quality.summarize.save_histograms_scatter_plots_and_csv(probabilities, labels, certainties, orig_names, predictions, output_path, output_path_all_plots)
+    microscopeimagequality.summarize.save_histograms_scatter_plots_and_csv(probabilities, labels, certainties, orig_names, predictions, output_path, output_path_all_plots)
 
-    quality.summarize.save_summary_montages(probabilities, certainties, orig_names, predictions, experiments, output_path, output_path_all_plots)
+    microscopeimagequality.summarize.save_summary_montages(probabilities, certainties, orig_names, predictions, experiments, output_path, output_path_all_plots)
 
     logging.info('Done summarizing results at %s', output_path)
 
@@ -359,16 +359,16 @@ def validate(images, width, height, patch_width):
     image_paths = []
 
     for image in images:
-        image_paths += quality.dataset_creation.get_images_from_glob(image, _MAX_IMAGES_TO_VALIDATE)
+        image_paths += microscopeimagequality.dataset_creation.get_images_from_glob(image, _MAX_IMAGES_TO_VALIDATE)
 
     click.echo('Found {} paths'.format(len(image_paths)))
 
     if len(image_paths) == 0:
         raise ValueError('No images found.')
 
-    quality.validation.check_duplicate_image_name(image_paths)
+    microscopeimagequality.validation.check_duplicate_image_name(image_paths)
 
     if width is None or height is None:
-        height, width = quality.dataset_creation.image_size_from_glob(images, patch_width)
+        height, width = microscopeimagequality.dataset_creation.image_size_from_glob(images, patch_width)
 
-    quality.validation.check_image_dimensions(image_paths, height, width)
+    microscopeimagequality.validation.check_image_dimensions(image_paths, height, width)

@@ -24,9 +24,9 @@ pip install --editable .
 
 Download the model:
 This downloads the `model.ckpt-1000042` checkpoint (a model trained
-for 1000042 steps).
+for 1000042 steps) specified in `constants.py`.
 ```sh
-quality download downloaded_models
+microscopeimagequality download 
 ```
 
 Add path to local repository (e.g. `/Users/user/my_repo/All-projects`)
@@ -43,13 +43,13 @@ pytest --disable-pytest-warnings
 
 You should now be able to run:
 ```sh
-quality --help
+microscopeimagequality --help
 ```
 
 or directly access the
 module functions in a jupyter notebook or from your own python module:
 ```sh
-from quality import degrade
+from microscopeimagequality import degrade
 degrade.degrade(...)
 ```
 
@@ -66,13 +66,13 @@ width and height.
 
 (Optional) Confirm that all images are of the same dimension:
 ```sh
- quality validate tests/data/images_for_glob_test/*.tif --width 100 --height 100
+ microscopeimagequality validate tests/data/images_for_glob_test/*.tif --width 100 --height 100
 ```
 
 Run inference on each image independently.
 
 ```sh
-  quality predict \
+  microscopeimagequality predict \
   --checkpoint downloaded_models/model.ckpt-1000042 \
   --output tests/output/ \
   tests/data/BBBC006*10.png
@@ -81,7 +81,7 @@ Run inference on each image independently.
 Summarize the prediction results across the entire dataset. Output will be in
 "summary" sub directory.
 ```sh
-quality summarize tests/output/miq_result_images/
+microscopeimagequality summarize tests/output/miq_result_images/
 ```
 
 ## Training a new model
@@ -94,15 +94,15 @@ images, `.png` of `.tif` format, all with the same width and height.
 ### How to
 
 1. Generate additional labeled training examples of defocused images using `degrade.py`.
-1. Launch `quality fit` to train a model.
-1. Launch `quality evaluate` with a held-out test dataset.
+1. Launch `microscopeimagequality fit` to train a model.
+1. Launch `microscopeimagequality evaluate` with a held-out test dataset.
 1. Use TensorBoard to view training and eval progress (see `evaluation.py`).
 1. When satisfied with model accuracy, save the `model.ckpt` files for later use.
 
 
 Example fit:
 ```sh
-quality fit \
+microscopeimagequality fit \
 	--output tests/train_output \
 	tests/data/training/0/*.tif \
 	tests/data/training/1/*.tif \
@@ -118,7 +118,7 @@ quality fit \
 ```
 Example evaluation:
 ```sh
-quality evaluate \
+microscopeimagequality evaluate \
 	--checkpoint downloaded_models/model.ckpt-1000042 \
 	--output tests/data/output \
 	tests/data/training/0/*.tif \

@@ -5,7 +5,7 @@ Requires the prediction-annotated .png images and .csv files from
 aggregated .csv file and various summary images.
 
 Example usage:
-  quality summarize <path_to_eval_directory>
+  microscopeimagequality summarize <path_to_eval_directory>
 """
 
 import logging
@@ -17,8 +17,8 @@ import matplotlib.pyplot
 import numpy
 import skimage.io
 
-import quality.constants
-import quality.evaluation
+import microscopeimagequality.constants
+import microscopeimagequality.evaluation
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
@@ -186,7 +186,7 @@ def _read_valid_part_of_annotated_image(experiment_path, orig_name):
     # Find the annotated image file. There is exactly one.
     for index, name in enumerate(all_files):
         # Exclude all masks from search.
-        if (quality.constants.ORIG_IMAGE_FORMAT + '.png') % orig_name in name:
+        if (microscopeimagequality.constants.ORIG_IMAGE_FORMAT + '.png') % orig_name in name:
             filename_index = index
     if filename_index is None:
         raise ValueError('File %s not found' % orig_name)
@@ -194,7 +194,7 @@ def _read_valid_part_of_annotated_image(experiment_path, orig_name):
 
     image = skimage.io.imread(os.path.join(experiment_path, annotated_filename))
 
-    mask_path = os.path.join(experiment_path, quality.constants.VALID_MASK_FORMAT % orig_name + '.png')
+    mask_path = os.path.join(experiment_path, microscopeimagequality.constants.VALID_MASK_FORMAT % orig_name + '.png')
 
     # if not os.path.isdir(mask_path):
     #     logging.info('No mask found at %s', mask_path)
@@ -221,15 +221,15 @@ def _save_color_legend(num_classes, path):
 
     probabilities = numpy.identity(num_classes, dtype=numpy.float32)
     probabilities = numpy.tile(probabilities, [num_classes, 1])
-    patch_width = quality.evaluation.BORDER_SIZE // 2
+    patch_width = microscopeimagequality.evaluation.BORDER_SIZE // 2
     patches = numpy.zeros((num_classes ** 2, patch_width, patch_width, 1), dtype=numpy.float32)
     # Make up some dummy labels.
     labels = [0] * num_classes ** 2
     image_shape = (num_classes * patch_width, num_classes * patch_width)
 
-    image = quality.evaluation.get_rgb_image(1.0, patches, probabilities, labels,
+    image = microscopeimagequality.evaluation.get_rgb_image(1.0, patches, probabilities, labels,
                                      image_shape)
-    image = image[quality.evaluation.BORDER_SIZE:quality.evaluation.BORDER_SIZE + patch_width, :]
+    image = image[microscopeimagequality.evaluation.BORDER_SIZE:microscopeimagequality.evaluation.BORDER_SIZE + patch_width, :]
     matplotlib.pyplot.figure()
     matplotlib.pyplot.imshow(image, interpolation='nearest')
     matplotlib.pyplot.grid('off')
@@ -262,13 +262,13 @@ def save_histograms_scatter_plots_and_csv(probabilities,
         output_path_all_plots = output_path
 
     logging.info('Saving inference results in single .csv file.')
-    quality.evaluation.save_inference_results(probabilities, labels, certainties,
+    microscopeimagequality.evaluation.save_inference_results(probabilities, labels, certainties,
                                       orig_names, predictions,
                                       os.path.join(output_path, 'results_all.csv'))
 
     logging.info('Generating simple result plot.')
     save_confusion = not numpy.any(numpy.array(labels) < 0)
-    quality.evaluation.save_result_plots(probabilities, labels, save_confusion,
+    microscopeimagequality.evaluation.save_result_plots(probabilities, labels, save_confusion,
                                  output_path_all_plots)
 
     predictions = numpy.array(predictions)
@@ -286,16 +286,16 @@ def save_histograms_scatter_plots_and_csv(probabilities,
 
     # Generate and save histograms for predictions and certainties.
 
-    quality.evaluation.save_prediction_histogram(
+    microscopeimagequality.evaluation.save_prediction_histogram(
         predictions,
         os.path.join(output_path, 'histogram_predictions.jpg'), num_classes)
-    quality.evaluation.save_prediction_histogram(
+    microscopeimagequality.evaluation.save_prediction_histogram(
         predictions,
         os.path.join(output_path, 'histogram_predictions_log.jpg'),
         num_classes,
         log=True)
 
-    for kind in quality.evaluation.CERTAINTY_TYPES.values():
+    for kind in microscopeimagequality.evaluation.CERTAINTY_TYPES.values():
         if kind == 'aggregate':
             path = output_path
         else:
@@ -310,12 +310,12 @@ def save_histograms_scatter_plots_and_csv(probabilities,
 def _adjust_image_annotation(image, label_intensity):
     """Adjusts the annotation at the bottom of the image."""
     # Change the intensity of the bottom border.
-    image[-1 * quality.evaluation.BORDER_SIZE:, :, :] = (
-        image[-1 * quality.evaluation.BORDER_SIZE:, :, :].astype(numpy.float32) *
+    image[-1 * microscopeimagequality.evaluation.BORDER_SIZE:, :, :] = (
+        image[-1 * microscopeimagequality.evaluation.BORDER_SIZE:, :, :].astype(numpy.float32) *
         label_intensity).astype(image.dtype)
 
     # Make bottom border larger.
-    border_size = max(quality.evaluation.BORDER_SIZE,
+    border_size = max(microscopeimagequality.evaluation.BORDER_SIZE,
                       int(_BORDER_FRACTION * image.shape[0]))
     image[-1 * border_size:, :, :] = numpy.tile(image[-1:, :, :], (border_size, 1,
                                                                    1))
@@ -488,7 +488,7 @@ def save_summary_montages(probabilities,
 
         # Now actually generate the montages.
         montage_by_class_rank('random', certainties['mean'])
-        for certainty in quality.evaluation.CERTAINTY_TYPES.values():
+        for certainty in microscopeimagequality.evaluation.CERTAINTY_TYPES.values():
             logging.info('Generating montages for certainty type: %s.', certainty)
             montage_by_certainty(certainties[certainty], certainty)
             plot_most_least_certain(certainties[certainty], certainty)

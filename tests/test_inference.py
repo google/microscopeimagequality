@@ -6,10 +6,10 @@ import PIL.Image
 import numpy
 import tensorflow
 
-import quality.constants
-import quality.data_provider
-import quality.evaluation
-import quality.prediction
+import microscopeimagequality.constants
+import microscopeimagequality.data_provider
+import microscopeimagequality.evaluation
+import microscopeimagequality.prediction
 
 
 class Inference(tensorflow.test.TestCase):
@@ -28,7 +28,7 @@ class Inference(tensorflow.test.TestCase):
         values = numpy.round(
             numpy.array([[0.2, 0.4, 0.5], [1.0, 0.0, 0.3]]) *
             numpy.iinfo(numpy.uint16).max).astype(numpy.uint16)
-        mask = quality.prediction.patch_values_to_mask(values, self.patch_width)
+        mask = microscopeimagequality.prediction.patch_values_to_mask(values, self.patch_width)
         self.assertEquals((168, 252), mask.shape)
         self.assertEquals(numpy.iinfo(numpy.uint16).max, numpy.max(mask))
 
@@ -36,7 +36,7 @@ class Inference(tensorflow.test.TestCase):
         test_filename = 'BBBC006_z_aligned__a01__s1__w1_10.png'
         orig_name = os.path.join(self.test_data_directory, test_filename)
         prediction = 1
-        certainties = {name: 0.3 for name in quality.evaluation.CERTAINTY_NAMES}
+        certainties = {name: 0.3 for name in microscopeimagequality.evaluation.CERTAINTY_NAMES}
         num_patches = 4
         np_images = numpy.ones((num_patches, self.patch_width, self.patch_width, 1))
         np_probabilities = numpy.ones(
@@ -50,7 +50,7 @@ class Inference(tensorflow.test.TestCase):
         image_height = int(numpy.sqrt(num_patches)) * self.patch_width
         image_width = image_height
 
-        quality.prediction.save_masks_and_annotated_visualization(
+        microscopeimagequality.prediction.save_masks_and_annotated_visualization(
             orig_name, self.test_dir, prediction, certainties, np_images,
             np_probabilities, np_labels, self.patch_width, image_height,
             image_width)
@@ -61,13 +61,13 @@ class Inference(tensorflow.test.TestCase):
             self.test_dir,
             'actual2_pred1_mean_certainty=0.300orig_name=%s' % test_filename)
         expected_predictions_path = os.path.join(self.test_dir,
-                                                 quality.constants.PREDICTIONS_MASK_FORMAT %
+                                                 microscopeimagequality.constants.PREDICTIONS_MASK_FORMAT %
                                                  test_filename)
         expected_certainties_path = os.path.join(self.test_dir,
-                                                 quality.constants.CERTAINTY_MASK_FORMAT %
+                                                 microscopeimagequality.constants.CERTAINTY_MASK_FORMAT %
                                                  test_filename)
         expected_valid_path = os.path.join(self.test_dir,
-                                           quality.constants.VALID_MASK_FORMAT %
+                                           microscopeimagequality.constants.VALID_MASK_FORMAT %
                                            test_filename)
 
         img = PIL.Image.open(expected_visualization_path, 'r')
@@ -87,7 +87,7 @@ class Inference(tensorflow.test.TestCase):
                          '-6432-4f7e-bf58-625a1319a1c9.tif')
         orig_name = os.path.join(self.test_data_directory, test_filename)
         prediction = 1
-        certainties = {name: 0.3 for name in quality.evaluation.CERTAINTY_NAMES}
+        certainties = {name: 0.3 for name in microscopeimagequality.evaluation.CERTAINTY_NAMES}
         num_patches = 4
         np_images = numpy.ones((num_patches, self.patch_width, self.patch_width, 1))
         np_probabilities = numpy.ones(
@@ -97,14 +97,14 @@ class Inference(tensorflow.test.TestCase):
 
         np_labels = 2 * numpy.ones(num_patches)
 
-        quality.prediction.save_masks_and_annotated_visualization(
+        microscopeimagequality.prediction.save_masks_and_annotated_visualization(
             orig_name, self.test_dir, prediction, certainties, np_images,
             np_probabilities, np_labels, self.patch_width, image_height,
             image_width)
 
         mask_formats = [
-            quality.constants.CERTAINTY_MASK_FORMAT, quality.constants.PREDICTIONS_MASK_FORMAT,
-            quality.constants.VALID_MASK_FORMAT
+            microscopeimagequality.constants.CERTAINTY_MASK_FORMAT, microscopeimagequality.constants.PREDICTIONS_MASK_FORMAT,
+            microscopeimagequality.constants.VALID_MASK_FORMAT
         ]
         for mask_format in mask_formats:
             orig_name_png = os.path.splitext(os.path.basename(orig_name))[0] + '.png'
@@ -119,7 +119,7 @@ class Inference(tensorflow.test.TestCase):
         image_width = 84
         image_height = 84
 
-        tfexamples_tfrecord = quality.prediction.build_tfrecord_from_pngs(
+        tfexamples_tfrecord = microscopeimagequality.prediction.build_tfrecord_from_pngs(
             [self.glob_images],
             use_unlabeled_data=True,
             num_classes=num_classes,
@@ -131,16 +131,16 @@ class Inference(tensorflow.test.TestCase):
             image_width=image_width,
             image_height=image_height)
 
-        num_samples = quality.data_provider.get_num_records(tfexamples_tfrecord %
-                                                            quality.prediction._SPLIT_NAME)
+        num_samples = microscopeimagequality.data_provider.get_num_records(tfexamples_tfrecord %
+                                                            microscopeimagequality.prediction._SPLIT_NAME)
 
         logging.info('TFRecord has %g samples.', num_samples)
 
         g = tensorflow.Graph()
         with g.as_default():
-            images, one_hot_labels, _, _ = quality.data_provider.provide_data(
+            images, one_hot_labels, _, _ = microscopeimagequality.data_provider.provide_data(
                 tfexamples_tfrecord,
-                split_name=quality.prediction._SPLIT_NAME,
+                split_name=microscopeimagequality.prediction._SPLIT_NAME,
                 batch_size=batch_size,
                 num_classes=num_classes,
                 image_width=84,
@@ -149,7 +149,7 @@ class Inference(tensorflow.test.TestCase):
                 randomize=False,
                 num_threads=1)
 
-            labels = quality.evaluation.get_model_and_metrics(
+            labels = microscopeimagequality.evaluation.get_model_and_metrics(
                 images,
                 num_classes=num_classes,
                 one_hot_labels=one_hot_labels,

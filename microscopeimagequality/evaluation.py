@@ -7,7 +7,7 @@ Usage:
   Start eval loop, which runs forever, constantly checking for new model
     checkpoints:
     
-    quality evaluate --checkpoint <path_to_train_directory> \
+    microscopeimagequality evaluate --checkpoint <path_to_train_directory> \
       --output <path_to_train_directory> \
      "/focus0/*,/focus1/*,/focus2/*, \
       /focus3/*,/focus4/*,/focus5/*,/focus6/*,/focus7/*,/focus8/*,/focus9/*, \
@@ -35,7 +35,7 @@ import tensorflow
 import tensorflow.contrib.slim
 import tensorflow.python.ops
 
-import quality.miq
+import microscopeimagequality.miq
 
 _IMAGE_ANNOTATION_MAGNIFICATION_PERCENT = 800
 CERTAINTY_NAMES = ['mean', 'max', 'aggregate', 'weighted']
@@ -588,7 +588,7 @@ def get_model_and_metrics(images,
     A ModelAndMetrics object.
   """
     # Define the model:
-    logits = quality.miq.miq_model(
+    logits = microscopeimagequality.miq.miq_model(
         images,
         num_classes=num_classes,
         is_training=is_training,
