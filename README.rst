@@ -73,7 +73,6 @@ Run inference on each image independently.
 
 ```sh
   microscopeimagequality predict \
-  --checkpoint downloaded_models/model.ckpt-1000042 \
   --output tests/output/ \
   tests/data/BBBC006*10.png
 ```
