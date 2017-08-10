@@ -19,6 +19,11 @@ setuptools.setup(
     ],
     test_requires=["pytest"],
     name="microscopeimagequality",
+    package_data={
+        "quality": [
+            "data/"
+        ]
+    },
     classifiers=[
     'License :: OSI Approved :: Apache Software License',
     'Intended Audience :: Science/Research',
