@@ -27,6 +27,130 @@ _SPLIT_NAME = 'test'
 
 _TFRECORD_FILE_PATTERN = 'data_%s-%05d-of-%05d.tfrecord'
 
+class ImageQualityClassifier(object):
+  """Object for running image quality model inference.
+
+  Attributes:
+    graph: TensorFlow graph.
+  """
+
+  def __init__(self,
+               model_ckpt,
+               model_patch_side_length,
+               num_classes,
+               graph=None):
+    """Initialize the model from a checkpoint.
+
+    Args:
+      model_ckpt: String, path to TensorFlow model checkpoint to load.
+      model_patch_side_length: Integer, the side length in pixels of the square
+        image passed to the model.
+      num_classes: Integer, the number of classes the model predicts.
+      graph: TensorFlow graph. If None, one will be created.
+    """
+    self._model_patch_side_length = model_patch_side_length
+    self._num_classes = num_classes
+
+    if graph is None:
+      graph = tensorflow.Graph()
+    self.graph = graph
+
+    with self.graph.as_default():
+      self._image_placeholder = tensorflow.placeholder(
+          tensorflow.float32, shape=[None, None, 1])
+
+      self._probabilities = self._probabilities_from_image(
+          self._image_placeholder, model_patch_side_length, num_classes)
+
+      self._sess = tensorflow.Session()
+      saver = tensorflow.train.Saver()
+
+      saver.restore(self._sess, model_ckpt)
+    logging.info('Model restored from %s.', model_ckpt)
+
+  def __del__(self):
+    self._sess.close()
+
+  def _probabilities_from_image(self, image_placeholder,
+                                model_patch_side_length, num_classes):
+    """Get probabilities tensor from input image tensor.
+
+    Args:
+      image_placeholder: Float32 tensor, placeholder for input image.
+      model_patch_side_length: Integer, the side length in pixels of the square
+        image passed to the model.
+      num_classes: Integer, the number of classes the model predicts.
+
+    Returns:
+      Probabilities tensor, shape [num_classes] representing the predicted
+      probabilities for each class.
+    """
+    labels_fake = tensorflow.zeros([self._num_classes])
+
+    image_path_fake = tensorflow.constant(['unused'])
+    tiles, labels, _ = _get_image_tiles_tensor(
+        image_placeholder, labels_fake, image_path_fake,
+        model_patch_side_length)
+
+    model_metrics = quality.evaluation.get_model_and_metrics(
+        tiles,
+        num_classes=num_classes,
+        one_hot_labels=labels,
+        is_training=False)
+
+    return model_metrics.probabilities
+
+  def predict(self, image):
+    """Run inference on an image.
+
+    Args:
+      image: Numpy float array, two-dimensional.
+
+    Returns:
+      A evaluation.WholeImagePrediction object.
+    """
+    feed_dict = {self._image_placeholder: numpy.expand_dims(image, 2)}
+    [np_probabilities] = self._sess.run(
+        [self._probabilities], feed_dict=feed_dict)
+
+    return quality.evaluation.aggregate_prediction_from_probabilities(
+        np_probabilities, quality.evaluation.METHOD_AVERAGE)
+
+  def get_annotated_prediction(self, image):
+    """Run inference to annotate the input image with patch predictions.
+
+    Args:
+      image: Numpy float array, two-dimensional.
+
+    Returns:
+      RGB image as uint8 numpy array of shape (image_height, image_width, 3),
+      representing the upper left crop of the input image, where:
+         image_height = floor(image.shape[0] / model_patch_side_length)
+         image_width = floor(image.shape[1] / model_patch_side_length)
+    """
+
+    feed_dict = {self._image_placeholder: numpy.expand_dims(image, 2)}
+
+    with self.graph.as_default():
+      patches = _get_image_tiles_tensor(
+          self._image_placeholder,
+          tensorflow.constant([0]),
+          tensorflow.constant([0]),
+          patch_width=self._model_patch_side_length)[0]
+      [np_probabilities, np_patches] = self._sess.run(
+          [self._probabilities, patches], feed_dict=feed_dict)
+
+    # We use '-1' to denote no true label exists.
+    np_labels = -1 * numpy.ones((np_patches.shape[0]))
+    return numpy.squeeze(
+        quality.evaluation.visualize_image_predictions(
+            np_patches,
+            np_probabilities,
+            np_labels,
+            image.shape[0],
+            image.shape[1],
+            show_plot=False,
+            output_path=None))
 
 def patch_values_to_mask(values, patch_width):
     """Construct a mask from an array of patch values.
@@ -157,6 +281,28 @@ def save_masks_and_annotated_visualization(orig_name,
         predictions.shape, dtype=numpy.uint16) * numpy.iinfo(numpy.uint16).max
     save_mask_from_patch_values(valid_pixel_regions, quality.constants.VALID_MASK_FORMAT)
 
+def _get_image_tiles_tensor(image, label, image_path, patch_width):
+  """Gets patches that tile the input image, starting at upper left.
+
+  Args:
+    image: Input image tensor, size [height x width x 1].
+    label: Input label tensor, size [num_classes].
+    image_path: Input image path tensor, size [1].
+    patch_width: Integer representing width of image patch.
+
+  Returns:
+    Tensors tiles, size [num_tiles x patch_width x patch_width x 1], labels,
+    size [num_tiles x num_classes], and image_paths, size [num_tiles x 1].
+  """
+  tiles_before_reshape = tensorflow.extract_image_patches(
+      tensorflow.expand_dims(image, dim=0), [1, patch_width, patch_width, 1],
+      [1, patch_width, patch_width, 1], [1, 1, 1, 1], 'VALID')
+  tiles = tensorflow.reshape(tiles_before_reshape, [-1, patch_width, patch_width, 1])
+
+  labels = tensorflow.tile(tensorflow.expand_dims(label, dim=0), [tensorflow.shape(tiles)[0], 1])
+  image_paths = tensorflow.tile(
+      tensorflow.expand_dims(image_path, dim=0), [tensorflow.shape(tiles)[0], 1])
+  return tiles, labels, image_paths
 
 def run_model_inference( model_ckpt_file, probabilities, labels, images,
                         output_directory, image_paths, num_samples,
