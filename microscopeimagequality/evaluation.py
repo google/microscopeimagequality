@@ -53,7 +53,8 @@ class WholeImagePrediction(collections.namedtuple('WholeImagePrediction', ['pred
     Prediction for a whole image.
 
     Properties:
-        predicitons: The integer index representing the class with highest average probability.
+        predictions: The integer index representing the class with highest average probability. For 11
+          focus classes, this is a value in [0, 11), where lower denotes more in-focus.
         certainties: A dictionary mapping prediction certainty type to float certainty values.
         probabilities: 1D numpy float array of the class probabilities.
     """

@@ -28,6 +28,11 @@ for 1000042 steps) specified in `constants.py`.
 ```sh
 microscopeimagequality download 
 ```
+or alternatively:
+```python
+import microscopeimagequality.miq
+microscopeimagequality.miq.download_model()
+```
 
 Add path to local repository (e.g. `/Users/user/my_repo/All-projects`)
 to `PYTHONPATH` environment variable:
@@ -48,7 +53,7 @@ microscopeimagequality --help
 
 or directly access the
 module functions in a jupyter notebook or from your own python module:
-```sh
+```python
 from microscopeimagequality import degrade
 degrade.degrade(...)
 ```
@@ -118,7 +123,7 @@ microscopeimagequality fit \
 Example evaluation:
 ```sh
 microscopeimagequality evaluate \
-	--checkpoint downloaded_models/model.ckpt-1000042 \
+	--checkpoint <path_to_model_checkpoint>/model.ckpt-XXXXXXX \
 	--output tests/data/output \
 	tests/data/training/0/*.tif \
 	tests/data/training/1/*.tif \
