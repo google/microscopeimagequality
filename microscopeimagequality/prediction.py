@@ -129,8 +129,8 @@ class ImageQualityClassifier(object):
     """
     results = []
     w = microscopeimagequality.constants.PATCH_SIDE_LENGTH
-    for i in range(image.shape[0] / w):
-      for j in range(image.shape[1] / w):
+    for i in range(0, image.shape[0] - w, w):
+      for j in range(0, image.shape[1] - w, w):
         results.append((i, j, w, w, self.predict(image[i:i+w, j:j+w])))
     return results               
     
