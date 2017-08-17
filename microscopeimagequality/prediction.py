@@ -115,7 +115,25 @@ class ImageQualityClassifier(object):
 
     return microscopeimagequality.evaluation.aggregate_prediction_from_probabilities(
         np_probabilities, microscopeimagequality.evaluation.METHOD_AVERAGE)
+  
+  def get_patch_predictions(self,  image):
+    """Run inference on each patch in an image, returning each patch score.
 
+    Args:
+      image: Numpy float array, of shape (height, width).
+
+    Returns:
+      List of tuples, with (upper_left_row, upper_left_col, height, width
+      evaluation.WholeImagePrediction) which denote the patch location,
+      dimensions and predition result.
+    """
+    results = []
+    w = microscopeimagequality.constants.PATCH_SIDE_LENGTH
+    for i in range(image.shape[0] / w):
+      for j in range(image.shape[1] / w):
+        results.append((i, j, w, w, self.predict(image[i:i+w, j:j+w])))
+    return results               
+    
   def get_annotated_prediction(self, image):
     """Run inference to annotate the input image with patch predictions.
 
