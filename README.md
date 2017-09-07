@@ -1,5 +1,5 @@
-# Microscope Image Focus Quality Classifier
-
+Microscope Image Focus Quality Classifier
+============================
 This repo contains code for using a pre-trained TensorFlow model to classify the
 quality (e.g. running inference) of image focus in microscope images.
 
@@ -8,16 +8,18 @@ as well.
 
 This is not an official Google product.
 
-## Getting started
+Getting started
+-------------
 
 Clone the `main` branch of this repository
-```sh
-git clone -b main <repository_url>
+
+```
+git clone -b main https://github.com/google/microscopeimagequality.git
 ```
 
 Install the package:
 
-```sh
+```
 cd All-Projects
 pip install --editable .
 ```
@@ -25,7 +27,7 @@ pip install --editable .
 Download the model:
 This downloads the `model.ckpt-1000042` checkpoint (a model trained
 for 1000042 steps) specified in `constants.py`.
-```sh
+```
 microscopeimagequality download 
 ```
 or alternatively:
@@ -36,18 +38,18 @@ microscopeimagequality.miq.download_model()
 
 Add path to local repository (e.g. `/Users/user/my_repo/All-projects`)
 to `PYTHONPATH` environment variable:
-```sh
+```
 export PYTHONPATH="${PYTHONPATH}:/Users/user/my_repo/All-projects"
 ```
 
 Run all tests to make sure everything works. Install any missing
 packages (e.g. `sudo pip install pytest` or `sudo pip install nose`).
-```sh
+```
 pytest --disable-pytest-warnings
 ```
 
 You should now be able to run:
-```sh
+```
 microscopeimagequality --help
 ```
 
@@ -58,8 +60,8 @@ from microscopeimagequality import degrade
 degrade.degrade(...)
 ```
 
-## Running inference
-
+Running inference
+-------------
 ### Requirements for running inference
 * A pre-trained TensorFlow model `.ckpt` files, downloadable using
   download instructions above.
@@ -76,7 +78,7 @@ width and height.
 
 Run inference on each image independently.
 
-```sh
+```
   microscopeimagequality predict \
   --output tests/output/ \
   tests/data/BBBC006*10.png
@@ -84,11 +86,12 @@ Run inference on each image independently.
 
 Summarize the prediction results across the entire dataset. Output will be in
 "summary" sub directory.
-```sh
+```
 microscopeimagequality summarize tests/output/miq_result_images/
 ```
 
-## Training a new model
+Training a new model
+----------------
 
 ### Requirements
 * TensorFlow 1.0.0 or higher, and several other python modules.
@@ -105,7 +108,7 @@ images, `.png` of `.tif` format, all with the same width and height.
 
 
 Example fit:
-```sh
+```
 microscopeimagequality fit \
 	--output tests/train_output \
 	tests/data/training/0/*.tif \
@@ -121,7 +124,7 @@ microscopeimagequality fit \
 	tests/data/training/10/*.tif
 ```
 Example evaluation:
-```sh
+```
 microscopeimagequality evaluate \
 	--checkpoint <path_to_model_checkpoint>/model.ckpt-XXXXXXX \
 	--output tests/data/output \
