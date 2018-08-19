@@ -24,7 +24,9 @@ git clone -b main https://github.com/google/microscopeimagequality.git
 Install the package:
 
 ```
-cd All-Projects
+cd microscopeimagequality
+# Note: To install pip, run "sudo easy_install pip".
+# Note: This may need to be run with "sudo pip".
 pip install --editable .
 ```
 
@@ -40,10 +42,10 @@ import microscopeimagequality.miq
 microscopeimagequality.miq.download_model()
 ```
 
-Add path to local repository (e.g. `/Users/user/my_repo/All-projects`)
+Add path to local repository (e.g. `/Users/user/my_repo/microscopeimagequality`)
 to `PYTHONPATH` environment variable:
 ```
-export PYTHONPATH="${PYTHONPATH}:/Users/user/my_repo/All-projects"
+export PYTHONPATH="${PYTHONPATH}:/Users/user/my_repo/microscopeimagequality"
 ```
 
 Run all tests to make sure everything works. Install any missing
