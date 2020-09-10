@@ -9,11 +9,13 @@ This macro can generate whole-plate montages per channel for inspecting image qu
 
 ![example result](example_result.jpg)
 
+### Example set of input images
+A sample dataset to test the macro can be found [here (300MB)](https://storage.googleapis.com/nyscfgas/nyscf3_data_sources_external/TestDataSet2Channels.zip).
 
 ### Requirements
 This Fiji (ImageJ) macro requires both [Fiji](https://imagej.net/Fiji) and the [Microscope Image Focus Quality Classifier](https://imagej.net/Microscope_Focus_Quality) plugin.
 
-Input images must live in a single directory. A sample dataset to test the macro can be found here.
+Input images must live in a single directory.
 ### Getting started
 #### Installing Microscope Image Focus Quality Classifier
 Please see directions [here](https://imagej.net/Microscope_Focus_Quality.html#Installation).
