@@ -128,8 +128,8 @@ function make_random_rectangle(imageID) {
 	selectImage(imageID);
 	makeRectangle(randint(0, image_width - crop_side_length), randint(0,image_height - crop_side_length), crop_side_length, crop_side_length); //random crop
 	getRawStatistics(nPixels, mean, min, max, std, histogram);
-	// criteria of min/max and mean is to only select ROIs that aren't blank or blown out
-	while(min/max > 0.1 && mean < 1000) {
+	// criteria of min/max is to only select ROIs that aren't blank
+	while(min/max > 0.1) {
 		if (counter == random_iterations) {
 			// max number of iterations
 			break;
