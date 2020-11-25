@@ -55,9 +55,13 @@ cd microscopeimagequality
 ```
 
 **Note**: This requires pip be installed.
+
 **Note**: This library has not been migrated beyond TensorFlow 1.x
+
 **Note**: As of now TensorFlow 1.x requires Python 3.7 or earlier.
+
 **Note**: This library has only been tested with Python 2.7.16
+
 ```
 python --version
 python -m pip install --editable .
