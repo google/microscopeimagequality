@@ -12,8 +12,8 @@ See our paper [PDF](http://rdcu.be/I5cE) for reference:
 
 Yang, S. J., Berndl, M., Ando, D. M., Barch, M., Narayanaswamy, A. ,
 Christiansen, E., Hoyer, S., Roat, C., Hung, J., Rueden, C. T.,
-Shankar, A., Finkbeiner, S., & and Nelson, P. (2018). Assessing
-microscope image focus quality with deep learning. BMC Bioinformatics,
+Shankar, A., Finkbeiner, S., & and Nelson, P. (2018). **Assessing
+microscope image focus quality with deep learning**. *BMC Bioinformatics*,
 19(1).
 
 Also see the
@@ -54,10 +54,10 @@ Install the package:
 cd microscopeimagequality
 ```
 
-# Note: This requires pip be installed.
-# Note: This library has not been migrated beyond TensorFlow 1.x
-# Note: As of now TensorFlow 1.x requires Python 3.7 or earlier.
-# Note: This library has only been tested with Python 2.7.16
+**Note**: This requires pip be installed.
+**Note**: This library has not been migrated beyond TensorFlow 1.x
+**Note**: As of now TensorFlow 1.x requires Python 3.7 or earlier.
+**Note**: This library has only been tested with Python 2.7.16
 ```
 python --version
 python -m pip install --editable .
