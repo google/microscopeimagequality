@@ -1,6 +1,6 @@
 Microscope Image Focus Quality Classifier
 ============================
-This repo contains code for using a pre-trained TensorFlow model to classify the
+This repo contains python code for using a pre-trained TensorFlow model to classify the
 quality (e.g. running inference) of image focus in microscope images.
 
 Code for training a new model from a dataset of in-focus only images is included
@@ -8,9 +8,36 @@ as well.
 
 This is not an official Google product.
 
-See the paper [PDF](http://rdcu.be/I5cE) for reference:
+See our paper [PDF](http://rdcu.be/I5cE) for reference:
 
-Yang, S. J., Berndl, M., Ando, D. M., Barch, M., Narayanaswamy, A. , Christiansen, E., Hoyer, S., Roat, C., Hung, J., Rueden, C. T., Shankar, A., Finkbeiner, S., & and Nelson, P. (2018). Assessing microscope image focus quality with deep learning. BMC Bioinformatics, 19(1).
+Yang, S. J., Berndl, M., Ando, D. M., Barch, M., Narayanaswamy, A. ,
+Christiansen, E., Hoyer, S., Roat, C., Hung, J., Rueden, C. T.,
+Shankar, A., Finkbeiner, S., & and Nelson, P. (2018). Assessing
+microscope image focus quality with deep learning. BMC Bioinformatics,
+19(1).
+
+Also see the
+[Fiji (ImageJ) Microscope Focus Qualtiy plugin](https://imagej.net/Microscope_Focus_Quality),
+which allows use of the same pre-trained model on user-supplied images
+in a user-friendly graphical user interface, without the need to write
+any code. Fiji also has macro scripting capabilities for running
+batches of images. This plugin is being actively maintained. I
+recommend testing your images with the Fiji plugin before
+investing further effort in this python library.
+
+Finally, please note that this python library was developed on the
+older and now (as of 2020) deprecated Python 2.7 and TensorFlow 1.x, and is not
+being actively maintained and updated. The `setup.py`
+currently restricts to these older versions. If you just want the
+pre-trained model for integration with your own inference code, you
+may need a `saved_model.pb` file that's currently only distributed
+with the Fiji plugin and downloadable
+[here](https://downloads.imagej.net/fiji/models/microscope-image-quality-model.zip). Updating
+this library to work with Python 3.x may be fairly straight
+forward. However, updating it to work on TensorFlow 2.x may require
+quite a bit of refactoring (at the very least, it appears the data
+provider implementation and interface may need to change).
+
 
 Getting started
 -------------
@@ -25,9 +52,15 @@ Install the package:
 
 ```
 cd microscopeimagequality
-# Note: To install pip, run "sudo easy_install pip".
-# Note: This may need to be run with "sudo pip".
-pip install --editable .
+```
+
+# Note: This requires pip be installed.
+# Note: This library has not been migrated beyond TensorFlow 1.x
+# Note: As of now TensorFlow 1.x requires Python 3.7 or earlier.
+# Note: This library has only been tested with Python 2.7.16
+```
+python --version
+python -m pip install --editable .
 ```
 
 Download the model:
@@ -49,7 +82,7 @@ export PYTHONPATH="${PYTHONPATH}:/Users/user/my_repo/microscopeimagequality"
 ```
 
 Run all tests to make sure everything works. Install any missing
-packages (e.g. `sudo pip install pytest` or `sudo pip install nose`).
+packages (e.g. `python -m pip install pytest`).
 ```
 pytest --disable-pytest-warnings
 ```
@@ -61,7 +94,8 @@ microscopeimagequality --help
 
 or directly access the
 module functions in a jupyter notebook or from your own python module:
-```python
+```
+python
 from microscopeimagequality import degrade
 degrade.degrade(...)
 ```
