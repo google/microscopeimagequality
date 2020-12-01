@@ -236,11 +236,11 @@ def save_masks_and_annotated_visualization(orig_name,
     ValueError: If the image to annotate cannot be found or opened.
   """
 
-    orig_name = orig_name.decode("utf-8")
-
     if not os.path.isfile(orig_name):
         raise ValueError('File for annotating does not exist: %s.' % orig_name)
 
+    if not isinstance(orig_name, str):
+      orig_name = orig_name.decode('utf-8')
     output_height, output_width = skimage.io.imread(orig_name).shape
 
     logging.info('Original image size %d x %d', output_height, output_width)
@@ -256,7 +256,7 @@ def save_masks_and_annotated_visualization(orig_name,
             (0, y_pad), (0, x_pad), (0, 0))
         im_padded = numpy.pad(im, pad_size, 'constant')
 
-        skimage.io.imsave(image_output_path, im_padded)
+        skimage.io.imsave(image_output_path, im_padded, "pil")
 
     orig_name_png = os.path.splitext(os.path.basename(orig_name))[0] + '.png'
     visualized_image_name = ('actual%g_pred%g_mean_certainty=%0.3f' +

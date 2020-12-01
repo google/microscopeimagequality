@@ -132,10 +132,9 @@ def test_get_airy_psf_golden_zero_depth():
 
 def test_read_write_png():
     image = get_test_image("cell_image.tiff")
-
     output_path = os.path.join(test_dir, "cell_image2.png")
 
-    skimage.io.imsave(output_path, image)
+    skimage.io.imsave(output_path, image, "pil")
 
     image2 = microscopeimagequality.dataset_creation.read_16_bit_greyscale(output_path)
 

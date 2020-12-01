@@ -18,7 +18,6 @@ Example usage:
 import os
 
 import numpy
-import past.builtins
 import scipy.integrate
 import scipy.signal
 import scipy.special
@@ -137,8 +136,8 @@ def get_airy_psf(psf_width_pixels, psf_width_meters, z, wavelength, numerical_ap
 
     meters_per_pixel = psf_width_meters / psf_width_pixels
     psf = numpy.zeros((psf_width_pixels, psf_width_pixels), dtype=numpy.float64)
-    for i in past.builtins.xrange(psf_width_pixels):
-        for j in past.builtins.xrange(psf_width_pixels):
+    for i in range(psf_width_pixels):
+        for j in range(psf_width_pixels):
             x = (i - (psf_width_pixels - 1.0) / 2.0) * meters_per_pixel
             y = (j - (psf_width_pixels - 1.0) / 2.0) * meters_per_pixel
             psf[i, j] = _evaluate_airy_function_at_point(
@@ -254,4 +253,4 @@ def degrade_images(images, output_path, z_depth_meters, exposure_factor, random_
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
 
-        skimage.io.imsave(output_filename, noisy_image)
+        skimage.io.imsave(output_filename, noisy_image, "pil")

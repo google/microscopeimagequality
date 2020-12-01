@@ -49,7 +49,7 @@ def test_get_num_records():
 
 def save16_bit_png(filename, im):
     path = os.path.join(test_dir, filename)
-    skimage.io.imsave(path, im)
+    skimage.io.imsave(path, im, "pil")
 
 
 def get_tf_session(graph):
@@ -110,7 +110,7 @@ def test_batching():
         numpy.testing.assert_array_equal(list(np_images.shape), [batch_size, microscopeimagequality.data_provider.IMAGE_WIDTH, microscopeimagequality.data_provider.IMAGE_WIDTH, 1 ])
         numpy.testing.assert_array_equal([batch_size, 1], list(np_image_paths.shape))
         assert 1 == len(np_image_paths[0])
-        assert "image_000" == os.path.basename(np_image_paths[0][0])
+        assert b"image_000" == os.path.basename(np_image_paths[0][0])
 
         # Check the ordering of labels in a single batch (which is preserved
         # since we used num_threads=1).
@@ -210,7 +210,7 @@ def test_provide_data_image_path():
 
         [np_image_paths] = sess.run([image_paths])
 
-        filename_expected = "image_000"
+        filename_expected = b"image_000"
         assert 1 == len(np_image_paths[0])
         assert filename_expected == os.path.basename(np_image_paths[0][0])
 

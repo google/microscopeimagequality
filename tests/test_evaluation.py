@@ -22,7 +22,7 @@ class Evaluation(tensorflow.test.TestCase):
         image_width = 28
         image = numpy.expand_dims(
             numpy.expand_dims(
-                numpy.ones((image_width, image_width)), axis=0), axis=3)
+                numpy.zeros((image_width, image_width)), axis=0), axis=3)
         annotated_image = microscopeimagequality.evaluation.annotate_patch(image, prediction=0, label=0)
         expected_image_width = (
             image_width * microscopeimagequality.evaluation._IMAGE_ANNOTATION_MAGNIFICATION_PERCENT / 100)
@@ -386,7 +386,7 @@ class Evaluation(tensorflow.test.TestCase):
         num_classes = 3
         aggregate_probabilities = numpy.ones((self.batch_size, num_classes))
         aggregate_probabilities[0, 2] = 3
-        aggregate_labels = range(self.batch_size)
+        aggregate_labels = list(range(self.batch_size))
         certainties = {
             'mean': [numpy.float64(1.0 / 3)] * self.batch_size,
             'max': [0.0] * self.batch_size,
@@ -394,7 +394,7 @@ class Evaluation(tensorflow.test.TestCase):
             'weighted': [1.0] * self.batch_size
         }
         orig_names = ['orig_name'] * self.batch_size
-        aggregate_predictions = range(self.batch_size)
+        aggregate_predictions = list(range(self.batch_size))
         test_directory = os.path.join(self.test_dir, 'save_load_test')
         os.makedirs(test_directory)
         output_path = os.path.join(test_directory, 'results.csv')

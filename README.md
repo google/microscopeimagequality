@@ -60,12 +60,14 @@ cd microscopeimagequality
 
 **Note**: As of now TensorFlow 1.x requires Python 3.7 or earlier.
 
-**Note**: This library has only been tested with Python 2.7.16
+**Note**: This library has been tested with Python 3.7.9 (using `pyenv`).
 
 ```
 python --version
 python -m pip install --editable .
 ```
+
+If using `pyenv`, run `pyenv rehash`.
 
 Download the model:
 This downloads the `model.ckpt-1000042` checkpoint (a model trained
@@ -86,7 +88,9 @@ export PYTHONPATH="${PYTHONPATH}:/Users/user/my_repo/microscopeimagequality"
 ```
 
 Run all tests to make sure everything works. Install any missing
-packages (e.g. `python -m pip install pytest`).
+packages (e.g. `python -m pip install pytest`, then if using `pyenv`,
+run `pyenv rehash`).
+
 ```
 pytest --disable-pytest-warnings
 ```

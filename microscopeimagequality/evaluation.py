@@ -28,7 +28,7 @@ import PIL.Image
 import PIL.ImageDraw
 import matplotlib.pyplot
 import numpy
-import scipy.misc
+import scipy.special
 import scipy.stats
 import skimage.io
 import tensorflow
@@ -88,10 +88,10 @@ def annotate_patch(image, prediction, label):
         text_label = 'ERROR: actual: %g, predicted: %g' % (label, prediction)
 
     # Enlarge the image so the text is legible.
-    resized_image = scipy.misc.imresize(
-        numpy.squeeze(image),
-        size=float(_IMAGE_ANNOTATION_MAGNIFICATION_PERCENT) / 100.0,
-        interp='nearest')
+    resized_image = numpy.array(PIL.Image.fromarray(numpy.squeeze(image)).resize(
+        size=[e * int(_IMAGE_ANNOTATION_MAGNIFICATION_PERCENT / 100) for e in (image.shape[1], image.shape[2])],
+        resample=PIL.Image.NEAREST))
+
 
     # Use PIL image to introduce a text label, then convert back to numpy array.
     pil_image = PIL.Image.fromarray(resized_image)
@@ -191,7 +191,7 @@ def visualize_image_predictions(patches,
 
     # Save it.
     if output_path is not None:
-        skimage.io.imsave(output_path, image_rgb)
+        skimage.io.imsave(output_path, image_rgb, "pil")
 
     # Expand from to 4D shape required by TensorFlow.
     return numpy.expand_dims(image_rgb, 0)
@@ -369,7 +369,7 @@ def aggregate_prediction_from_probabilities(probabilities,
         # The following computes this using logs for numerical stability.
         sum_log_probabilities = numpy.sum(numpy.log(probabilities), 0)
         probabilities_aggregated = numpy.exp(
-            sum_log_probabilities - scipy.misc.logsumexp(sum_log_probabilities))
+            sum_log_probabilities - scipy.special.logsumexp(sum_log_probabilities))
     else:
         raise ValueError('Invalid aggregation method %s.' % aggregation_method)
     predicted_class = numpy.argmax(probabilities_aggregated)
@@ -565,7 +565,7 @@ def get_confusion_matrix(predicted_probabilities,
     matplotlib.pyplot.xlabel('predicted class')
     matplotlib.pyplot.ylabel('actual class')
     matplotlib.pyplot.title(plot_title)
-    matplotlib.pyplot.savefig(open(filename, 'w'), bbox_inches='tight')
+    matplotlib.pyplot.savefig(open(filename, 'wb'), bbox_inches='tight')
     print('Saved confusion matrix at %s' % filename)
     return confusion
 

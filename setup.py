@@ -1,7 +1,7 @@
 import setuptools
 
 setuptools.setup(
-    python_requires='<=3.7',
+    python_requires='<3.8',
     entry_points={
         "console_scripts": [
             "microscopeimagequality=microscopeimagequality.application:command"
@@ -9,15 +9,15 @@ setuptools.setup(
     },
     install_requires=[
         "click",
-        "matplotlib>=2.0.0",
+        "matplotlib",
         "nose",
-        "numpy<2.0,>=1.16.0",
+        "numpy<1.19.0,>=1.16.0",
         "Pillow",
         "scikit-image",
-        "scipy>=0.17.0",
+        "scipy",
         "six",
-        "tensorflow==1.15",
-        "tf_slim"
+        "tensorflow==1.15.4",
+        "imagecodecs",
     ],
     test_requires=["pytest"],
     name="microscopeimagequality",
