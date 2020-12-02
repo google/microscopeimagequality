@@ -168,7 +168,7 @@ def ranked_probability_score(predictions, targets, dim, name=None):
   References:
     Murphy AH. A Note on the Ranked Probability Score. J. Appl. Meteorol. 1971,
     10:155-156.
-    http://dx.doi.org/10.1175/1520-0450(1971)010<0155:ANOTRP>2.0.CO;2
+    https://doi.org/10.1175/1520-0450(1971)010<0155:ANOTRP>2.0.CO;2
 
   Args:
     predictions: tf.Tensor with probabilities for each class.
