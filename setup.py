@@ -16,7 +16,7 @@ setuptools.setup(
         "scikit-image",
         "scipy",
         "six",
-        "tensorflow==1.15.4",
+        "tensorflow==2.5.1",
         "imagecodecs",
     ],
     test_requires=["pytest"],
