@@ -11,7 +11,7 @@ setuptools.setup(
         "click",
         "matplotlib",
         "nose",
-        "numpy<1.19.0,>=1.16.0",
+        "numpy<1.19.3,>=1.16.0",
         "Pillow",
         "scikit-image",
         "scipy",
